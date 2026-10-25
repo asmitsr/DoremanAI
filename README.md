@@ -1,29 +1,53 @@
-# 🤖 Doreman AI (ডোরেমন এআই) — v1.1.0
+<div align="center">
 
-[https://img.shields.io/badge/KOTLIN-1.9.22-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white]
-[https://img.shields.io/badge/JETPACK%20COMPOSE-MATERIAL%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white]
-[https://img.shields.io/badge/CUSTOM%20GATEWAY-CLAUDE%20%7C%20GPT-10B981?style=for-the-badge]
-[https://img.shields.io/badge/GOOGLE%20GEMINI-API-8E75B2?style=for-the-badge]
+# 🤖 Doreman AI (ডোরেমন এআই)
 
-> 📌 **Doreman AI** হলো আপনার Android ফোনের জন্য তৈরি একটি Siri-স্টাইল ভয়েস-কন্ট্রোলড পার্সোনাল অ্যাসিস্ট্যান্ট।
+[![Kotlin](https://img.shields.io/badge/KOTLIN-1.9.22-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![Jetpack Compose](https://img.shields.io/badge/JETPACK%20COMPOSE-MATERIAL%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Custom Gateway](https://img.shields.io/badge/CUSTOM%20GATEWAY-CLAUDE%20%7C%20GPT-10B981?style=for-the-badge)](https://github.com/)
+[![Google Gemini](https://img.shields.io/badge/GOOGLE%20GEMINI-API-8E75B2?style=for-the-badge)](https://ai.google.dev/)
+
+**An advanced Siri-style voice-controlled personal assistant for Android, powered by cutting-edge AI.**
+
+</div>
 
 ---
 
-## ⚙️ প্রধান ফিচারসমূহ (v1.1.0)
+## 📌 Introduction
 
-| ফিচার | অবস্থা | বিবরণ |
+**Doreman AI** হলো আপনার অ্যান্ড্রয়েড ডিভাইসের জন্য তৈরি একটি স্মার্ট ও দ্রুতগতির ভয়েস-কন্ট্রোলড পার্সোনাল অ্যাসিস্ট্যান্ট। এটি আপনার প্রাত্যহিক কাজগুলোকে ভয়েস কমান্ডের মাধ্যমে সম্পূর্ণ স্বয়ংক্রিয় করে তোলে।
+
+---
+
+## ⚙️ Core Features (v1.1.0)
+
+| Feature | Status | Description |
 | :--- | :---: | :--- |
-| **Custom Gateway (`sk-...` Token)** | ✅ সক্রিয় | যেকোনো থার্ড-পার্টি ওয়েবসাইটের Base URL (`https://tabitoken.com` ইত্যাদি) ও প্রিমিয়াম মডেল (Claude Opus/Sonnet, GPT-4o) সাপোর্ট। |
-| **সাইলেন্ট ওয়েক-ওয়ার্ড (`"Doreman"`)** | ✅ সক্রিয় | স্ক্রিনে চাপ না দিয়েই শুধু নাম ধরে ডাকলে নিঃশব্দে জেগে ওঠে (কোনো বিরক্তিকর বিপ সাউন্ড নেই)। |
-| **ফোনেটিক কন্টাক্ট কল (`Baba`/`বাবা`)** | ✅ সক্রিয় | বাংলা বা ইংরেজি যেকোনো উচ্চারণে বললেই ফোনের সেভ করা কন্টাক্ট খুঁজে সরাসরি কল করে। |
-| **Play Store গেম ডাউনলোড ও ইনস্টল** | ✅ সক্রিয় | গেমের নাম বললে Play Store খুলে স্বয়ংক্রিয়ভাবে `Install` বাটনে ট্যাপ করে। |
-| **WhatsApp অটো-সেন্ড** | ✅ সক্রিয় | নাম বা নম্বর খুঁজে মেসেজ লিখে স্বয়ংক্রিয়ভাবে `Send` বাটনে ট্যাপ করে। |
-| **মোবাইল ক্লিন / ফ্ল্যাশ** | ✅ সক্রিয় | ক্যাশ পরিষ্কার করে এবং ফোনের ক্লিনার/বুস্টার চালু করে। |
+| **Custom Gateway (`sk-...` Token)** | ✅ Active | Support for third-party Base URLs and premium models (Claude Opus/Sonnet, GPT-4o). |
+| **Silent Wake-Word (`"Doreman"`)** | ✅ Active | Wakes up instantly and silently upon hearing the wake word without annoying beep sounds. |
+| **Phonetic Contact Calling** | ✅ Active | Automatically searches and calls saved contacts using Bengali or English pronunciation. |
+| **Play Store Automation** | ✅ Active | Opens the Play Store via voice command and automatically taps the `Install` button. |
+| **WhatsApp Auto-Send** | ✅ Active | Finds contacts or numbers, types messages, and automatically triggers the `Send` button. |
+| **Mobile Booster & Cleaner** | ✅ Active | Clears device cache and launches system cleaner tools instantly. |
 
 ---
 
-## 📥 সরাসরি APK ডাউনলোড ও সেটআপ
+## 📥 Download & Quick Setup
 
-১. ডানপাশের **Releases** সেকশন থেকে **`Doreman AI v1.1.0 (Latest APK)`**-এ ক্লিক করে **`app-debug.apk`** ডাউনলোড ও ইনস্টল করুন।
-২. অ্যাপ খুলে **Settings (⚙️) > ১০০% পারমিশন সেটআপ হাব**-এ গিয়ে সব পারমিশন এবং **Accessibility** চালু করুন।
-৩. **Settings (⚙️) > AI Brain & Custom Gateway**-তে গিয়ে আপনার **Gateway Base URL** ও **`sk-...` API Key** অথবা **Gemini API Key** সেভ করে **Test Connection** চাপুন।
+1. **Download APK:** Go to the [Releases](https://github.com/asmitsr/DoremanAI/releases) section on the right, download the latest **`app-debug.apk`**, and install it on your device[span_0](start_span)[span_0](end_span).
+2. **Permissions:** Open the app, navigate to **Settings (⚙️) > Permission Setup Hub**, and grant all required permissions including **Accessibility**.
+3. **Configure AI Brain:** Go to **Settings (⚙️) > AI Brain & Custom Gateway**, input your **Gateway Base URL** & **API Key** (or Gemini API Key), and tap **Test Connection**.
+
+---
+
+## 🛠️ Tech Stack
+
+* **Language:** Kotlin[span_1](start_span)[span_1](end_span)
+* **UI Toolkit:** Jetpack Compose (Material 3)[span_2](start_span)[span_2](end_span)
+* **AI Integration:** Google Gemini API & Custom LLM Gateways[span_3](start_span)[span_3](end_span)
+
+---
+
+## 📄 License
+
+This project is open-source and available under the [MIT License](LICENSE).
