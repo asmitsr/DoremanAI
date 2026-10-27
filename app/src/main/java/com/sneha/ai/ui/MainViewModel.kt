@@ -58,6 +58,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val stt = SpeechInput(a)
     private var thinkJob: Job? = null
+    private var summaryClearJob: Job? = null
     private var inForeground = true
     private var awakeForNextCommand = false
 
@@ -78,8 +79,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // v1.2.1: returning from the dialer / WhatsApp / another app must not
+    // leave the assistant deaf. The first command after returning works
+    // without saying "Doreman" again, and a stale Executing phase is reset
+    // when nothing is actually running.
     fun onAppForegrounded() {
         inForeground = true
+        awakeForNextCommand = true
+        if (!a.executor.busy) {
+            phase.value = Phase.Idle
+        }
         if (handsFree.value && keySet.value && !a.executor.busy && phase.value == Phase.Idle) {
             scheduleNextListen(500)
         }
@@ -215,10 +224,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val hasActions = p.actions.isNotEmpty()
         if (settings.value.autoSpeak && inForeground) {
             speak(reply) {
+                // v1.2.1: a completed reply re-arms follow-up commands, so
+                // the next spoken task works without "Doreman" again.
+                awakeForNextCommand = true
                 if (handsFree.value && inForeground && !hasActions && !a.executor.busy) {
                     scheduleNextListen(450)
                 }
             }
+        } else if (!hasActions) {
+            // No speech to wait for: the reply is already complete.
+            awakeForNextCommand = true
         }
         if (hasActions) {
             runActions(p.actions)
@@ -227,11 +242,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun runActions(list: List<Action>) {
         if (a.executor.busy) a.executor.cancel()
+        summaryClearJob?.cancel()
         a.executor.run(list) { log, _ ->
             val summary = log.lastOrNull() ?: ""
             if (summary.isNotBlank()) {
                 lastSpokenReply.value = summary
+                // v1.2.1: the action summary is a transient caption, not a
+                // permanent label. Clear it after 10s if it is still the
+                // same summary and no new command has started, so a
+                // cancelled call cannot stay on screen forever.
+                summaryClearJob = viewModelScope.launch {
+                    delay(10_000)
+                    if (lastSpokenReply.value == summary && !a.executor.busy) {
+                        lastSpokenReply.value = ""
+                    }
+                }
             }
+            // v1.2.1: a completed action re-arms follow-up commands.
+            awakeForNextCommand = true
             if (handsFree.value && inForeground) {
                 scheduleNextListen(1200)
             }
@@ -291,6 +319,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         a.tts.stop()
         if (a.executor.busy) return
         if (manualTap) awakeForNextCommand = true
+        // v1.2.1: a new listening session must not show the previous
+        // action's summary as its caption.
+        summaryClearJob?.cancel()
+        lastSpokenReply.value =
         phase.value = Phase.Listening
         partial.value = ""
         stt.start(
