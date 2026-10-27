@@ -32,11 +32,12 @@ class GatewayProvider(
         .writeTimeout(20, TimeUnit.SECONDS)
         .build()
 
+    // v1.2.0 fix: a blank gateway key is a clear error. It must NEVER fall
+    // back to the Gemini key — sending an AIza... key to a third-party gateway
+    // produced a confusing 401 that looked like a gateway failure.
     private fun apiKey(): String {
         val gwKey = keys.load(GATEWAY_KEY_NAME)?.trim().orEmpty()
         if (gwKey.isNotBlank()) return gwKey
-        val gemKey = keys.load(GEMINI_KEY_NAME)?.trim().orEmpty()
-        if (gemKey.isNotBlank()) return gemKey
         throw AiException(AiError.NO_KEY, "Gateway API Key সেট করা নেই। Settings > AI Brain-এ গিয়ে আপনার sk-... টোকেন দিন।")
     }
 
@@ -53,18 +54,23 @@ class GatewayProvider(
         return u
     }
 
+    // v1.2.0 fix: auth headers are now scheme-exact. Bearer mode sends ONLY
+    // "Authorization: Bearer <key>" — strict OpenAI-compatible gateways rejected
+    // the extra Anthropic headers that used to be sent on every call. The
+    // Anthropic headers are sent only in x-api-key (Claude) mode.
     private fun Request.Builder.applyAuth(key: String, scheme: String): Request.Builder {
         return when (scheme.lowercase()) {
             "x-api-key" -> this
                 .header("x-api-key", key)
                 .header("anthropic-version", "2023-06-01")
-            else -> this
-                .header("Authorization", "Bearer $key")
-                .header("x-api-key", key)
-                .header("anthropic-version", "2023-06-01")
+            else -> this.header("Authorization", "Bearer $key")
         }
     }
 
+    // v1.2.0 fix: Test Connection no longer returns a hard-coded model list
+    // when the gateway is unreachable or the key is wrong. A failed test now
+    // surfaces the real error, and an empty-but-successful response returns
+    // an empty list (MainViewModel already reports that case honestly).
     override suspend fun listModels(): Result<List<String>> = withContext(Dispatchers.IO) {
         runCatching {
             val s = prefs.current()
@@ -75,7 +81,6 @@ class GatewayProvider(
                 .applyAuth(key, s.gatewayAuthScheme)
                 .get()
                 .build()
-
             val list = mutableListOf<String>()
             try {
                 client.newCall(req).execute().use { r ->
@@ -90,27 +95,21 @@ class GatewayProvider(
                             if (mId != null) list.add(mId)
                         }
                     } else if (r.code == 401 || r.code == 403) {
-                        throw AiException(AiError.INVALID_KEY, "Gateway API Key সঠিক নয় (HTTP ${r.code})")
+                        throw AiException(AiError.INVALID_KEY, "Gateway API Key সঠিক নয় (HTTP ${r.code})", r.code)
+                    } else if (r.code == 404) {
+                        throw AiException(AiError.MODEL_NOT_FOUND, "Gateway-এ /v1/models পাওয়া যায়নি (HTTP 404) — Base URL / Format দেখুন", r.code)
+                    } else if (r.code == 429) {
+                        throw AiException(AiError.RATE_LIMIT, "Gateway rate limit (HTTP 429)", r.code)
+                    } else {
+                        throw AiException(AiError.SERVER, "Gateway ত্রুটি (HTTP ${r.code})", r.code)
                     }
                 }
             } catch (e: AiException) {
                 throw e
-            } catch (_: Exception) {}
-
-            if (list.isEmpty()) {
-                list.addAll(
-                    listOf(
-                        "claude-opus-4-6",
-                        "claude-sonnet-4-6",
-                        "claude-3-7-sonnet-20250219",
-                        "claude-3-5-sonnet-20241022",
-                        "gpt-4o",
-                        "gpt-4o-mini",
-                        "deepseek-chat",
-                        "gemini-2.5-pro",
-                        "gemini-2.5-flash"
-                    )
-                )
+            } catch (e: SocketTimeoutException) {
+                throw AiException(AiError.TIMEOUT, e.message ?: "Timeout")
+            } catch (e: IOException) {
+                throw AiException(AiError.NETWORK, e.message ?: "Network error")
             }
             list.distinct().sorted()
         }
@@ -161,6 +160,19 @@ class GatewayProvider(
         }
     }
 
+    // v1.2.0 fix: no stale default model. A blank model used to silently
+    // send claude-3-5-sonnet-20241022, which many gateways do not offer.
+    private fun requireModel(model: String): String {
+        val m = model.trim()
+        if (m.isBlank()) {
+            throw AiException(
+                AiError.MODEL_NOT_FOUND,
+                "মডেলের নাম খালি। Settings > AI Brain-এ Test Connection চাপুন ও তালিকা থেকে একটি মডেল বাছুন।"
+            )
+        }
+        return m
+    }
+
     private fun callOpenAi(
         base: String,
         key: String,
@@ -181,7 +193,7 @@ class GatewayProvider(
             }
 
         val body = JSONObject()
-            .put("model", cfg.model.ifBlank { "claude-3-5-sonnet-20241022" })
+            .put("model", requireModel(cfg.model))
             .put("messages", msgs)
             .put("max_tokens", cfg.maxTokens)
         cfg.temperature?.let { body.put("temperature", it.toDouble()) }
@@ -231,7 +243,7 @@ class GatewayProvider(
             }
 
         val body = JSONObject()
-            .put("model", cfg.model.ifBlank { "claude-3-5-sonnet-20241022" })
+            .put("model", requireModel(cfg.model))
             .put("system", system)
             .put("messages", msgs)
             .put("max_tokens", cfg.maxTokens)
