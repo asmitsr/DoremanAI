@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.sneha.ai.SnehaApp
 import com.sneha.ai.ai.*
 import com.sneha.ai.automation.SnehaAccessibilityService
+import com.sneha.ai.automation.DoremanVoiceService
 import com.sneha.ai.data.K
 import com.sneha.ai.data.Settings
 import com.sneha.ai.voice.SpeechInput
@@ -65,6 +66,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val wakeWords = listOf(
         "doreman", "doraemon", "doremon", "ডোরেমন", "ডরেমন", "দোরেমন", "hey doreman", "হে ডোরেমন", "hello doreman"
     )
+
+    // v1.3.1: if the user once said "stay awake", the foreground
+    // service must come back when the app process is recreated (e.g. after
+    // the system killed it in another app). Without this, returning to
+    // Doreman after a kill left no floating button and no service.
+    init {
+        viewModelScope.launch {
+            try {
+                if (a.prefs.current().stayAwake) {
+                    DoremanVoiceService.start(a)
+                }
+            } catch (_: Exception) { }
+        }
+    }
 
     private fun currentProvider(): AiProvider = a.activeProvider(settings.value.providerMode)
 
@@ -266,11 +281,21 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // v1.3.1: the old version checked the resume conditions ONCE, 1200ms
+    // after an action. If TTS was still speaking the reply at that exact
+    // moment, the check failed and listening NEVER resumed — the app looked
+    // stuck on the last action caption, and no wake word could be heard
+    // because no listening session was running at all. Now it retries
+    // every 500ms for up to 10s, so a slow TTS finish cannot strand it.
     private fun scheduleNextListen(delayMs: Long) {
         viewModelScope.launch(Dispatchers.Main) {
             delay(delayMs)
-            if (inForeground && handsFree.value && !a.executor.busy && phase.value == Phase.Idle && !a.tts.speaking.value) {
-                startListening(manualTap = false)
+            repeat(20) {
+                if (inForeground && handsFree.value && !a.executor.busy && phase.value == Phase.Idle && !a.tts.speaking.value) {
+                    startListening(manualTap = false)
+                    return@launch
+                }
+                delay(500)
             }
         }
     }
