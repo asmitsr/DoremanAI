@@ -15,6 +15,7 @@ import android.provider.Settings as AndroidSettings
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import com.sneha.ai.SnehaApp
+import com.sneha.ai.data.K
 import com.sneha.ai.ai.Action
 import com.sneha.ai.ai.describe
 import com.sneha.ai.ai.isUi
@@ -290,6 +291,11 @@ class ActionExecutor(private val app: SnehaApp) {
     }
 
     private fun stayAwake(on: Boolean): R {
+        // v1.3.1: remember the choice so MainViewModel can restore the
+        // service after the process is recreated.
+        app.appScope.launch {
+            try { app.prefs.set(K.stayAwake, on) } catch (_: Exception) { }
+        }
         return try {
             if (on) {
                 DoremanVoiceService.start(app)
