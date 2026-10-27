@@ -205,7 +205,9 @@ fun RadioRow(label: String, selected: Boolean, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(selected, onClick)
-        Text(label, style = MaterialTheme.typography.bodyMedium)
+        // v1.2.1: explicit onSurface colour — without it the model list
+        // rendered near-black on the dark / Midnight background.
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
