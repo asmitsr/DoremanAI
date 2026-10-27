@@ -14,11 +14,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
+/**
+ * v1.3.0: this service now WATCHES the screen, it does not just tap on
+ * demand. Previously onAccessibilityEvent() was empty, so Doreman knew
+ * nothing about the screen once you left the app — that is why a task
+ * "stopped" in WhatsApp / Settings.
+ *
+ * On every window change it snapshots the foreground package + the
+ * visible, non-password labels (max 60) into [lastScreen]. The LLM's
+ * "ui_read" / "স্ক্রিনে কী আছে" action can therefore answer from the
+ * snapshot even when rootInActiveWindow is momentarily unavailable, and
+ * ActionExecutor can check which app is actually in front before acting.
+ * No screenshot is taken, no password field is ever read, and no action
+ * is taken from a screen event alone — a user command is still required.
+ */
+data class ScreenSnapshot(val packageName: String = "", val texts: List<String> = emptyList())
+
 class SnehaAccessibilityService : AccessibilityService() {
 
     companion object {
         @Volatile var instance: SnehaAccessibilityService? = null
         val connected = MutableStateFlow(false)
+        val lastScreen = MutableStateFlow(ScreenSnapshot())
     }
 
     override fun onServiceConnected() {
@@ -27,7 +44,26 @@ class SnehaAccessibilityService : AccessibilityService() {
         connected.value = true
     }
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event == null) return
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        val pkg = event.packageName?.toString().orEmpty()
+        if (pkg.isBlank()) return
+        val texts = mutableListOf<String>()
+        try {
+            val root = rootInActiveWindow
+            if (root != null) {
+                walk(root) { n ->
+                    if (!n.isPassword) {
+                        val l = (n.text ?: n.contentDescription)?.toString()
+                        if (!l.isNullOrBlank()) texts.add((if (n.isClickable) "[tap] " else "") + l.take(80))
+                    }
+                    texts.size >= 60
+                }
+            }
+        } catch (_: Exception) { }
+        lastScreen.value = ScreenSnapshot(pkg, texts)
+    }
     override fun onInterrupt() {}
 
     override fun onUnbind(intent: Intent?): Boolean {
@@ -41,6 +77,7 @@ class SnehaAccessibilityService : AccessibilityService() {
     }
 
     fun foregroundPackage(): String? = rootInActiveWindow?.packageName?.toString()
+        ?: lastScreen.value.packageName.takeIf { it.isNotBlank() }
     fun back(): Boolean = performGlobalAction(GLOBAL_ACTION_BACK)
     fun home(): Boolean = performGlobalAction(GLOBAL_ACTION_HOME)
     fun lockScreen(): Boolean = if (Build.VERSION.SDK_INT >= 28) performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN) else false
