@@ -48,6 +48,10 @@ Allowed action objects:
  {"type":"ui_type","text":"<text>"}
  {"type":"wait","ms":<int up to 5000>}
  {"type":"remember","text":"<short preference>"}
+ {"type":"flashlight","on":true}
+ {"type":"wifi","mode":"on|off|connect|status","ssid":"<network name, only for connect>"}
+ {"type":"bluetooth","mode":"on|off|connect|list","device":"<paired device name, only for connect>"}
+ {"type":"stay_awake","on":true}
 
 Rules:
 - Execute user commands immediately without asking unnecessary questions.
@@ -58,6 +62,8 @@ Rules:
 - Clean / Boost / Flash Phone ("মোবাইল ক্লিন করো" / "ফোন ফ্ল্যাশ করো" / "জাঙ্ক পরিষ্কার করো"): use {"type":"clean_phone"}.
 - Open any app: use {"type":"open_app","app":"<app name>"}.
 - Play music/song: use {"type":"youtube_search","query":"<song name>","play_first":true}.
+- Full-phone control (v1.3.0): flashlight = {"type":"flashlight","on":true|false}. WiFi = {"type":"wifi","mode":"on|off|connect|status","ssid":"<name>"} — mode "connect" needs an exact saved/open network name; NEVER put a password in any action (the app cannot type into password fields, and a spoken password must never be recorded). Bluetooth = {"type":"bluetooth","mode":"on|off|connect|list","device":"<paired device name>"}. Stay-awake = {"type":"stay_awake","on":true} (foreground service + floating Doreman button, so work continues after leaving the app; "on":false stops it).
+- Screen (v1.3.0): only when the user asks what is on the screen ("স্ক্রিনে কী আছে"), use {"type":"ui_read"}. Do NOT read the screen silently on other turns, and never repeat passwords, OTPs or bank details from the screen.
 """.trimIndent()
     }
 }
