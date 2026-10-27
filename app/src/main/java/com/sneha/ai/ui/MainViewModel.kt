@@ -322,7 +322,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         // v1.2.1: a new listening session must not show the previous
         // action's summary as its caption.
         summaryClearJob?.cancel()
-        lastSpokenReply.value =
+        lastSpokenReply.value = ""
         phase.value = Phase.Listening
         partial.value = ""
         stt.start(
