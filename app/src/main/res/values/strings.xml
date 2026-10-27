@@ -1,5 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  v1.2.0 — Default (English) strings. Bengali equivalents live in
+  values-bn/strings.xml. These keys are the foundation for UI translation;
+  see CHANGELOG.md: HomeScreen/SettingsScreen still contain some hard-coded
+  literals, so this is NOT yet a complete UI translation.
+-->
 <resources>
     <string name="app_name">Doreman</string>
-    <string name="a11y_desc">শুধু আপনার নির্দেশে Doreman অন্য অ্যাপে ট্যাপ, স্ক্রল, টেক্সট লেখা, গেম ইনস্টল, মেসেজ পাঠানো এবং স্ক্রিনের লেবেল পড়তে পারবে। Lets Doreman tap, scroll, type, install apps and send messages when you ask it to.</string>
+    <string name="a11y_desc">Lets Doreman tap, scroll, type, install apps and send messages when you ask it to.</string>
+    <string name="home_hint">Tell Doreman or type…</string>
+    <string name="home_call_to_action">Say “Doreman” or give any command</string>
+    <string name="home_stop">Stop (STOP)</string>
+    <string name="home_which_app">Which app should I open?</string>
+    <string name="home_app_name_hint">Type the app name…</string>
+    <string name="home_close">Close</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_bn">Bengali</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_theme">Choose theme</string>
+    <string name="settings_theme_dark">Dark (Deep Cosmic Dark)</string>
+    <string name="settings_theme_light">Light (Clean Daylight)</string>
+    <string name="settings_theme_system">System default</string>
+    <string name="settings_theme_midnight">Midnight Indigo (#282B4A + Vanilla #EEEBDA)</string>
+    <string name="settings_voice_test">Voice test</string>
+    <string name="settings_gateway_tip">Base URL, Auth Scheme, Format and model name must all match your gateway. 401 means wrong key, 404 means wrong model or URL.</string>
 </resources>
