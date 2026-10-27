@@ -335,6 +335,7 @@ fun AiPage(vm: MainViewModel) {
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(conn, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                Note("টিপস: Base URL, Auth Scheme (Bearer / x-api-key), Format (OpenAI / Anthropic) ও মডেলের নাম — চারটাই আপনার গেটওয়ের সাথে মিলতে হবে। 401 মানে ভুল কী, 404 মানে ভুল মডেল/URL। Test Connection এখন ভুল কীতে মডেল তালিকা দেখাবে না।")
             }
         } else {
             SecCard("২. Google Gemini API Key") {
@@ -401,6 +402,11 @@ fun VoicePage(vm: MainViewModel) {
     val voices = remember(s.lang, tick) { a.tts.voices(s.lang) }
 
     Column(Modifier.verticalScroll(rememberScrollState())) {
+        SecCard("ভাষা / Language") {
+            RadioRow("বাংলা (Bengali)", s.lang == "bn") { vm.set(K.lang, "bn") }
+            RadioRow("English", s.lang == "en") { vm.set(K.lang, "en") }
+            Note("ভাষা বদলালে ভয়েস শোনা (bn-BD / en-US), কথা বলা (TTS) ও AI-এর উত্তরের ভাষা বদলে যাবে।")
+        }
         SecCard("নিঃশব্দ ওয়েক-মোড (No Beep Sound)") {
             SwitchRow("Doreman-এর উত্তর জোরে পড়ে শোনাও", s.autoSpeak) { vm.set(K.autoSpeak, it) }
             SwitchRow("নিঃশব্দে শুধু 'Doreman' ডাকের অপেক্ষায় থাকবে", handsFree) { vm.toggleHandsFree(it) }
@@ -593,6 +599,7 @@ fun LookPage(vm: MainViewModel) {
             RadioRow("ডার্ক (Deep Cosmic Dark)", s.theme == "dark") { vm.set(K.theme, "dark") }
             RadioRow("লাইট (Clean Daylight)", s.theme == "light") { vm.set(K.theme, "light") }
             RadioRow("সিস্টেম ডিফল্ট", s.theme == "system") { vm.set(K.theme, "system") }
+            RadioRow("মিডনাইট ইন্ডিগো (Midnight Indigo #282B4A + Vanilla #EEEBDA)", s.theme == "midnight") { vm.set(K.theme, "midnight") }
         }
     }
 }
@@ -610,7 +617,7 @@ fun NotifPage(vm: MainViewModel) {
 @Composable
 fun AboutPage() {
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        SecCard("Doreman AI — v1.1.0") {
+        SecCard("Doreman AI — v1.2.0") {
             Text("কাস্টম গেটওয়ে (Claude/OpenAI/Gemini) ও সাইলেন্ট ওয়েক ভয়েস অ্যাসিস্ট্যান্ট")
         }
     }
