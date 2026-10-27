@@ -26,6 +26,11 @@ sealed class Action {
     object ReadScreen : Action()
     data class Wait(val ms: Long) : Action()
     data class Remember(val text: String) : Action()
+    // v1.3.0 — full-phone device control (see DeviceControl.kt for limits).
+    data class Flashlight(val on: Boolean) : Action()
+    data class Wifi(val mode: String, val ssid: String? = null) : Action()
+    data class Bluetooth(val mode: String, val device: String? = null) : Action()
+    data class StayAwake(val on: Boolean) : Action()
 }
 
 fun Action.isUi(): Boolean = when (this) {
@@ -60,6 +65,18 @@ fun Action.describe(): String = when (this) {
     Action.ReadScreen -> "স্ক্রিনের লেবেল পড়া"
     is Action.Wait -> "অপেক্ষা ${ms}ms"
     is Action.Remember -> "মনে রাখা: \"$text\""
+    is Action.Flashlight -> if (on) "ফ্ল্যাশলাইট জ্বালানো" else "ফ্ল্যাশলাইট নিভানো"
+    is Action.Wifi -> when (mode) {
+        "connect" -> "WiFi-তে কানেক্ট: ${ssid ?: ""}"
+        "status" -> "WiFi স্ট্যাটাস দেখা"
+        else -> "WiFi $mode করা"
+    }
+    is Action.Bluetooth -> when (mode) {
+        "connect" -> "Bluetooth-এ কানেক্ট: ${device ?: ""}"
+        "list" -> "পেয়ার করা Bluetooth ডিভাইস দেখা"
+        else -> "Bluetooth $mode করা"
+    }
+    is Action.StayAwake -> if (on) "সারাক্ষণ চালু রাখা (ফোরগ্রাউন্ড সার্ভিস + ফ্লোটিং বোতাম)" else "সারাক্ষণ চালু বন্ধ করা"
 }
 
 data class Plan(val reply: String, val actions: List<Action>, val rejected: List<String>) {
@@ -135,6 +152,24 @@ object PlanParser {
                 "ui_read" -> Action.ReadScreen
                 "wait" -> Action.Wait(a.optLong("ms", 1000).coerceIn(200, 5000))
                 "remember" -> a.optString("text").trim().takeIf { it.isNotBlank() }?.let { Action.Remember(it.take(300)) }
+                // v1.3.0
+                "flashlight" -> {
+                    val on = when {
+                        a.has("on") -> a.optBoolean("on", true)
+                        a.optString("state").trim().lowercase() in setOf("off", "বন্ধ") -> false
+                        else -> true
+                    }
+                    Action.Flashlight(on)
+                }
+                "wifi" -> {
+                    val mode = a.optString("mode").trim().lowercase().ifBlank { a.optString("action").trim().lowercase() }
+                    if (mode in setOf("on", "off", "connect", "status")) Action.Wifi(mode, a.optString("ssid").trim().takeIf { it.isNotBlank() }) else null
+                }
+                "bluetooth" -> {
+                    val mode = a.optString("mode").trim().lowercase().ifBlank { a.optString("action").trim().lowercase() }
+                    if (mode in setOf("on", "off", "connect", "list")) Action.Bluetooth(mode, a.optString("device").trim().takeIf { it.isNotBlank() }) else null
+                }
+                "stay_awake" -> Action.StayAwake(a.optBoolean("on", true))
                 else -> null
             }
             if (act == null) rej.add(t.ifBlank { "?" }) else ok.add(act)
