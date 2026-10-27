@@ -60,12 +60,45 @@ private val LightScheme = lightColorScheme(
     onErrorContainer = Color(0xFF5F0914)
 )
 
+private val MidnightScheme = darkColorScheme(
+    // Midnight Indigo #282B4A background, Vanilla #EEEBDA surfaces/text.
+    primary = Color(0xFFEEEBDA),
+    onPrimary = Color(0xFF282B4A),
+    primaryContainer = Color(0xFF4A4E7A),
+    onPrimaryContainer = Color(0xFFEEEBDA),
+    secondary = Color(0xFFAEB2D8),
+    onSecondary = Color(0xFF282B4A),
+    secondaryContainer = Color(0xFF4A4E7A),
+    onSecondaryContainer = Color(0xFFEEEBDA),
+    tertiary = Color(0xFFF2D8C9),
+    onTertiary = Color(0xFF282B4A),
+    background = Color(0xFF282B4A),
+    onBackground = Color(0xFFEEEBDA),
+    surface = Color(0xFF34385F),
+    onSurface = Color(0xFFEEEBDA),
+    surfaceVariant = Color(0xFF41456F),
+    onSurfaceVariant = Color(0xFFD8D9E6),
+    outline = Color(0xFF6B70A3),
+    error = Color(0xFFFF8A95),
+    onError = Color(0xFF2D040A),
+    errorContainer = Color(0xFF5A1F2A),
+    onErrorContainer = Color(0xFFFFD9DC)
+)
+
 @Composable
 fun SnehaTheme(mode: String, fontScale: Float, content: @Composable () -> Unit) {
     val dark = when (mode) {
         "light" -> false
         "dark" -> true
+        "midnight" -> true
         else -> isSystemInDarkTheme()
+    }
+    // "midnight" is a named dark scheme, not the generic dark scheme.
+    val scheme = when (mode) {
+        "midnight" -> MidnightScheme
+        "light" -> LightScheme
+        "dark" -> DarkScheme
+        else -> if (dark) DarkScheme else LightScheme
     }
     val d = LocalDensity.current
     val base = MaterialTheme.typography
@@ -81,7 +114,7 @@ fun SnehaTheme(mode: String, fontScale: Float, content: @Composable () -> Unit) 
     )
     CompositionLocalProvider(LocalDensity provides Density(d.density, d.fontScale * fontScale)) {
         MaterialTheme(
-            colorScheme = if (dark) DarkScheme else LightScheme,
+            colorScheme = scheme,
             typography = typo,
             content = content
         )
