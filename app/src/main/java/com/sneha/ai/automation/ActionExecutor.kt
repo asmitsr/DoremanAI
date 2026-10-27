@@ -74,6 +74,23 @@ class ActionExecutor(private val app: SnehaApp) {
     fun cancel() { job?.cancel() }
 
     private suspend fun step(a: Action): R {
+        // v1.3.0: device actions go through DeviceControl, not the UI path.
+        when (a) {
+            is Action.Flashlight -> {
+                val r = DeviceControl.flashlight(app, a.on)
+                return R(r.first, r.second)
+            }
+            is Action.Wifi -> {
+                val r = DeviceControl.wifi(app, a, SnehaAccessibilityService.instance)
+                return R(r.first, r.second)
+            }
+            is Action.Bluetooth -> {
+                val r = DeviceControl.bluetooth(app, a, SnehaAccessibilityService.instance)
+                return R(r.first, r.second)
+            }
+            is Action.StayAwake -> return stayAwake(a.on)
+            else -> {}
+        }
         if (a.isUi()) {
             val svc = SnehaAccessibilityService.instance
             if (svc == null) {
@@ -145,7 +162,7 @@ class ActionExecutor(private val app: SnehaApp) {
         }
         is Action.TypeText -> { val e = s.typeText(a.text); if (e == null) R(true, "লেখা বসেছে") else R(false, e) }
         Action.Enter -> { val ok = s.pressEnter(); R(ok, if (ok) "Enter পাঠানো হয়েছে" else "Enter সম্ভব হয়নি") }
-        Action.ReadScreen -> { val l = s.readScreen(); R(true, if (l.isEmpty()) "কোনো লেবেল পাওয়া যায়নি" else "\n" + l.joinToString("\n")) }
+        Action.ReadScreen -> { val l = s.readScreen().ifEmpty { SnehaAccessibilityService.lastScreen.value.texts }; R(true, if (l.isEmpty()) "কোনো লেবেল পাওয়া যায়নি" else "\n" + l.joinToString("\n")) }
         is Action.YouTubeSearch -> playFirst(a, s)
         is Action.PlayStoreInstall -> installFromPlayStore(a.query, s)
         is Action.WhatsAppMsg -> autoSendWhatsApp(a.target, a.message, s)
@@ -270,6 +287,20 @@ class ActionExecutor(private val app: SnehaApp) {
             }
         }
         return R(true, "ভিডিও চালু করা হয়েছে")
+    }
+
+    private fun stayAwake(on: Boolean): R {
+        return try {
+            if (on) {
+                DoremanVoiceService.start(app)
+                R(true, "সারাক্ষণ চালু আছে — অন্য অ্যাপে গেলেও ফ্লোটিং Doreman বোতামে ট্যাপ করলেই শুনবে (Overlay অনুমতি না থাকলে নোটিফিকেশনে ট্যাপ করুন)")
+            } else {
+                DoremanVoiceService.stop(app)
+                R(true, "সারাক্ষণ চালু বন্ধ করা হয়েছে")
+            }
+        } catch (e: Exception) {
+            R(false, "সারাক্ষণ চালু করা যায়নি: " + e.message)
+        }
     }
 
     private suspend fun openApp(name: String): R {
