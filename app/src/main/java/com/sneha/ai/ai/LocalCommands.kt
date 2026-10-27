@@ -30,6 +30,62 @@ object LocalCommands {
         val bn = lang == "bn"
         val ok = if (bn) "ঠিক আছে, করছি।" else "Okay, doing that."
 
+        // --- v1.3.0: full-phone device control (checked BEFORE open-app,
+        // so "ওয়াইফাই খোলো" does not become an app search) ----------------
+        // Flashlight / torch
+        when {
+            lower.contains("ফ্ল্যাশলাইট জ্বালাও") || lower.contains("ফ্ল্যাশলাইট জ্বালিয়ে দাও") ||
+                lower.contains("ফ্ল্যাশলাইট চালু") || lower.contains("টর্চ জ্বালাও") ||
+                lower.contains("flashlight on") || lower.contains("torch on") ->
+                return Plan(ok, listOf(Action.Flashlight(true)), emptyList())
+            lower.contains("ফ্ল্যাশলাইট বন্ধ") || lower.contains("ফ্ল্যাশলাইট নিভিয়ে দাও") ||
+                lower.contains("টর্চ বন্ধ") || lower.contains("flashlight off") || lower.contains("torch off") ->
+                return Plan(ok, listOf(Action.Flashlight(false)), emptyList())
+        }
+        // WiFi connect to a named network: "X ওয়াইফাইতে কানেক্ট করো" /
+        // "ওয়াইফাই কানেক্ট করো X" / "connect wifi X"
+        val wifiConnect = extractBeforeSuffix(lower, listOf(" ওয়াইফাইতে কানেক্ট করো", " ওয়াইফাই-তে কানেক্ট করো", " wifi তে কানেক্ট করো"))
+            ?: extractAfterPrefix(lower, listOf("ওয়াইফাই কানেক্ট করো ", "wifi কানেক্ট করো ", "connect wifi ", "connect to wifi "))
+        if (wifiConnect != null && wifiConnect.length in 1..60) {
+            return Plan(ok, listOf(Action.Wifi("connect", wifiConnect)), emptyList())
+        }
+        when {
+            lower.contains("ওয়াইফাই চালু") || lower.contains("ওয়াইফাই অন করো") || lower.contains("wifi on") ->
+                return Plan(ok, listOf(Action.Wifi("on")), emptyList())
+            lower.contains("ওয়াইফাই বন্ধ") || lower.contains("ওয়াইফাই অফ করো") || lower.contains("wifi off") ->
+                return Plan(ok, listOf(Action.Wifi("off")), emptyList())
+            lower.contains("ওয়াইফাই স্ট্যাটাস") || lower.contains("wifi status") ->
+                return Plan(ok, listOf(Action.Wifi("status")), emptyList())
+        }
+        // Bluetooth connect: "ব্লুটুথে X কানেক্ট করো" / "connect bluetooth X"
+        val btConnect = extractBeforeSuffix(lower, listOf(" ব্লুটুথে কানেক্ট করো", " bluetooth এ কানেক্ট করো"))
+            ?: extractAfterPrefix(lower, listOf("ব্লুটুথে কানেক্ট করো ", "connect bluetooth ", "bluetooth connect "))
+        if (btConnect != null && btConnect.length in 1..60) {
+            return Plan(ok, listOf(Action.Bluetooth("connect", btConnect)), emptyList())
+        }
+        when {
+            lower.contains("ব্লুটুথ চালু") || lower.contains("ব্লুটুথ অন করো") || lower.contains("bluetooth on") ->
+                return Plan(ok, listOf(Action.Bluetooth("on")), emptyList())
+            lower.contains("ব্লুটুথ বন্ধ") || lower.contains("ব্লুটুথ অফ করো") || lower.contains("bluetooth off") ->
+                return Plan(ok, listOf(Action.Bluetooth("off")), emptyList())
+            lower.contains("পেয়ার করা ডিভাইস") || lower.contains("paired bluetooth") || lower.contains("bluetooth devices") ->
+                return Plan(ok, listOf(Action.Bluetooth("list")), emptyList())
+        }
+        // Screen: "স্ক্রিনে কী আছে" / "what's on my screen"
+        if (lower.contains("স্ক্রিনে কী আছে") || lower.contains("স্ক্রিন পড়ো") ||
+            lower.contains("what's on my screen") || lower.contains("what is on my screen") ||
+            lower.contains("read the screen")) {
+            return Plan(ok, listOf(Action.ReadScreen), emptyList())
+        }
+        // Stay awake: keep the foreground service + floating button alive
+        when {
+            lower.contains("সারাক্ষণ চালু রাখো") || lower.contains("ব্যাকগ্রাউন্ডে চালু রাখো") ||
+                lower.contains("stay awake") || lower.contains("keep listening in background") ->
+                return Plan(ok, listOf(Action.StayAwake(true)), emptyList())
+            lower.contains("সারাক্ষণ বন্ধ করো") || lower.contains("ফ্লোটিং বোতাম বন্ধ") ->
+                return Plan(ok, listOf(Action.StayAwake(false)), emptyList())
+        }
+
         // --- Call a contact -------------------------------------------------
         // "বাবাকে কল দাও" / "বাবাকে ফোন করো" / "call Baba" / "Baba কে কল দাও"
         val callTarget = extractCallTarget(raw, lower)
