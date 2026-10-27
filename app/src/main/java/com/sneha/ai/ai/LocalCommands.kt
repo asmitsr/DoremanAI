@@ -22,6 +22,11 @@ object LocalCommands {
         val raw = input.trim()
         if (raw.isEmpty()) return null
         val lower = raw.lowercase()
+        // v1.2.1: a WhatsApp request must never be fast-pathed to a normal
+        // phone call. Leave it to the LLM plan, which distinguishes a
+        // WhatsApp message from a plain call. A plain call here only ever
+        // returns Action.CallContact, never a WhatsApp action.
+        if (lower.contains("whatsapp") || lower.contains("হোয়াটসঅ্যাপ")) return null
         val bn = lang == "bn"
         val ok = if (bn) "ঠিক আছে, করছি।" else "Okay, doing that."
 
