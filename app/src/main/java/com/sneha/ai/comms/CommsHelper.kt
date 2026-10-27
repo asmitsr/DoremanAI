@@ -168,7 +168,12 @@ class CommsHelper(private val ctx: Context) {
             } else {
                 val i = Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 ctx.startActivity(i)
-                true to "ডায়ালারে $resolvedName ($resolvedNumber) খোলা হয়েছে।"
+                // v1.2.1: never present the dialer fallback as a direct
+                // call. The message now says, in plain words, that only
+                // the dial pad was opened and the green call button must
+                // still be pressed, and that granting Call permission
+                // would make it a direct call.
+                true to "$resolvedName ($resolvedNumber)-এর জন্য ডায়াল প্যাড খোলা হয়েছে — কল করতে সবুজ কল বোতাম চাপতে হবে (সরাসরি কল করতে Call permission দিন)।"
             }
         } catch (e: Exception) {
             false to "কল করা যায়নি: ${e.message}"
