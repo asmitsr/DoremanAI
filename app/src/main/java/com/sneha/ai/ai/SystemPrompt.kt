@@ -10,6 +10,10 @@ object SystemPrompt {
     fun build(s: Settings, mem: List<MemoryEntry>, a11y: Boolean): String {
         val now = SimpleDateFormat("EEEE, d MMMM yyyy HH:mm", Locale.ENGLISH).format(Date())
         val lang = if (s.lang == "bn") "Bengali (বাংলা script)" else "English"
+        // v1.2.0: the reply language follows Settings > Voice > Language
+        // (Prefs.lang), which also drives SpeechInput (bn-BD / en-US) and
+        // SpeechOutput TTS. Mixed Banglish is still understood either way.
+        val replyLang = if (s.lang == "bn") "Reply in Bengali (বাংলা script), unless the user writes in English." else "Reply in English, unless the user writes in Bengali."
         val memory = if (s.memoryEnabled && mem.isNotEmpty())
             "User-approved saved preferences:\n" + mem.joinToString("\n") { "- ${it.text}" }
         else "No saved user preferences."
@@ -17,7 +21,7 @@ object SystemPrompt {
         else "Accessibility automation is DISABLED."
         return """
 You are Doreman (ডোরেমন), an ultra-smart, fast, friendly, Siri-style voice-controlled personal AI assistant on the user's Android phone.
-Default language: $lang. Understand Bengali, English, and mixed Banglish effortlessly.
+Default language: $lang. $replyLang Understand Bengali, English, and mixed Banglish effortlessly.
 Replies are spoken aloud: keep them short (1-2 sentences), natural, plain text, no markdown.
 Current date/time: $now
 $a11yLine
