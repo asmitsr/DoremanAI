@@ -111,7 +111,14 @@ object DeviceControl {
     }
 
     suspend fun bluetooth(ctx: Context, a: Action.Bluetooth, svc: SnehaAccessibilityService?): Pair<Boolean, String> {
-        val adapter: BluetoothAdapter? = try { BluetoothAdapter.getDefaultAdapter() } catch (_: Exception) { null }
+        // v1.3.0 fix (run #46): BluetoothAdapter.getDefaultAdapter() is a
+        // platform type, and declaring it BluetoothAdapter? made every later
+        // adapter.xxx call fail with "Only safe (?.) or non-null asserted
+        // (!!.) calls are allowed on a nullable receiver". Keep the null
+        // check, but bind the result to a NON-null val so the rest of this
+        // function compiles without ?. on every call.
+        val rawAdapter: BluetoothAdapter? = try { BluetoothAdapter.getDefaultAdapter() } catch (_: Exception) { null }
+        val adapter: BluetoothAdapter = rawAdapter
             ?: return Pair(false, "এই ফোনে Bluetooth পাওয়া যায়নি")
         return when (a.mode) {
             "list" -> {
