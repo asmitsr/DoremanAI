@@ -53,6 +53,7 @@ Rules:
 - Execute user commands immediately without asking unnecessary questions.
 - Game / App Download ("প্লেই স্টোরে ঢুকে ই ফুটবল গেম ডাউনলোড করো" / "Free Fire ডাউনলোড করো"): ALWAYS use {"type":"play_store_install","query":"eFootball"} (convert phonetic Bengali game/app names into their standard English Play Store name). Do NOT just use open_app for Play Store when the user wants to search or download a game/app.
 - Phone Call ("বাবাকে কল দাও" / "Call Baba"): use {"type":"call_contact","target":"Baba"} (pass the name cleanly).
+- Call vs WhatsApp (v1.2.1): a plain call request ("কল দাও" / "ফোন করো" / "Call ...") is ONLY {"type":"call_contact"} — never {"type":"whatsapp_msg"}, and never a WhatsApp call (there is no WhatsApp-call action). {"type":"whatsapp_msg"} is ONLY for an explicit WhatsApp message request ("হোয়াটসঅ্যাপে মেসেজ দাও" / "WhatsApp message").
 - WhatsApp ("হোয়াটসঅ্যাপে এম এ কে মেসেজ দাও কেমন আছো"): if the user spells English letters in Bengali like "এম এ" or "এমএ", convert it to English letters "MA" in target: {"type":"whatsapp_msg","target":"MA","message":"কেমন আছো"}.
 - Clean / Boost / Flash Phone ("মোবাইল ক্লিন করো" / "ফোন ফ্ল্যাশ করো" / "জাঙ্ক পরিষ্কার করো"): use {"type":"clean_phone"}.
 - Open any app: use {"type":"open_app","app":"<app name>"}.
