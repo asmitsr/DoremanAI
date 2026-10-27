@@ -33,6 +33,7 @@ data class Settings(
     val favorites: Set<String> = emptySet(),
     val termuxEnabled: Boolean = false,
     val notifyAutomation: Boolean = true,
+    val stayAwake: Boolean = false,
     val reqCount: Int = 0,
     val tokensIn: Long = 0,
     val tokensOut: Long = 0,
@@ -62,6 +63,7 @@ object K {
     val favorites = stringSetPreferencesKey("favorites")
     val termux = booleanPreferencesKey("termux_enabled")
     val notify = booleanPreferencesKey("notify_automation")
+    val stayAwake = booleanPreferencesKey("stay_awake")
     val req = intPreferencesKey("req_count")
     val tin = longPreferencesKey("tokens_in")
     val tout = longPreferencesKey("tokens_out")
@@ -94,6 +96,7 @@ class Prefs(private val ctx: Context) {
             favorites = p[K.favorites] ?: d.favorites,
             termuxEnabled = p[K.termux] ?: d.termuxEnabled,
             notifyAutomation = p[K.notify] ?: d.notifyAutomation,
+            stayAwake = p[K.stayAwake] ?: d.stayAwake,
             reqCount = p[K.req] ?: 0,
             tokensIn = p[K.tin] ?: 0L,
             tokensOut = p[K.tout] ?: 0L,
