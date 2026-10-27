@@ -120,6 +120,22 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (raw.isEmpty()) return
 
         val cleanedCmd = stripWakeWord(raw).ifBlank { raw }
+
+        // v1.2.0 Siri-like fast-path: local keyword commands (call, open app,
+        // Play Store install, YouTube search, volume, media) run without an
+        // LLM round-trip. Anything else returns null and falls through to
+        // the existing LLM JSON plan flow below, unchanged.
+        if (!isRetry) {
+            val local = LocalCommands.parse(cleanedCmd, settings.value.lang)
+            if (local != null) {
+                a.tts.stop()
+                a.chat.add(ChatMsg("user", cleanedCmd))
+                phase.value = Phase.Idle
+                handle(local, if (settings.value.lang == "bn") "লোকাল কমান্ড" else "Local command", false)
+                return
+            }
+        }
+
         a.tts.stop()
         thinkJob?.cancel()
         thinkJob = viewModelScope.launch {
@@ -286,6 +302,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 level.value = 0f
                 onVoiceResult(it)
             },
+            // v1.2.0: SpeechInput delivers already-recognised words as
+            // onFinal on a silence timeout, so reaching onError here means
+            // nothing was recognised in this session — relistening drops
+            // no accumulated text. See SpeechInput.kt.
             onError = {
                 phase.value = Phase.Idle
                 partial.value = ""
