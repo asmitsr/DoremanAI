@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
@@ -66,6 +67,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
     val retryStatus by vm.retryStatus.collectAsStateWithLifecycle()
     val handsFree by vm.handsFree.collectAsStateWithLifecycle()
     val lastReply by vm.lastSpokenReply.collectAsStateWithLifecycle()
+    val messages by vm.messages.collectAsStateWithLifecycle()
 
     var input by remember { mutableStateOf("") }
     var showApps by remember { mutableStateOf(false) }
@@ -73,7 +75,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
 
     val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { g ->
         if (g) vm.startListening()
-        else vm.banner.value = "মাইক্রোফোন অনুমতি ছাড়া ভয়েস কমান্ড চলবে না। Settings > পারমিশন থেকে অনুমতি দিন।"
+        else vm.banner.value = "Voice commands cannot run without microphone permission. Allow it from Settings > Permissions."
     }
 
     fun onMic() {
@@ -103,10 +105,18 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(bgBrush)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .background(bgBrush),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // v2.0 dashboard: the dashboard scrolls above a pinned input row,
+        // so Quick Actions and Recent Activity never push the input off-screen.
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -152,10 +162,10 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                     }
                     Text(
                         text = when (ph) {
-                            Phase.Idle -> if (handsFree) "অটো-লিসেনিং চালু • নাম ধরে ডাকুন" else "প্রস্তুত"
-                            Phase.Listening -> "শুনছি… বলুন"
-                            Phase.Thinking -> retryStatus ?: "চিন্তা করছি…"
-                            Phase.Speaking -> "বলছি…"
+                            Phase.Idle -> if (handsFree) "Auto-listening on • Call me by name" else "Ready"
+                            Phase.Listening -> "Listening... speak now"
+                            Phase.Thinking -> retryStatus ?: "Thinking..."
+                            Phase.Speaking -> "Speaking..."
                             Phase.Executing -> exec.text
                         },
                         style = MaterialTheme.typography.bodySmall,
@@ -178,22 +188,61 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                 ) {
                     Icon(
                         imageVector = Icons.Default.HeadsetMic,
-                        contentDescription = "অটো-ওয়েক মোড",
+                        contentDescription = "Auto-wake mode",
                         tint = if (handsFree) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 IconButton(onClick = { nav("coding") }) {
                     Icon(
                         imageVector = Icons.Default.Code,
-                        contentDescription = "কোডিং মোড",
+                        contentDescription = "Coding Mode",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 IconButton(onClick = { nav("settings") }) {
                     Icon(
                         imageVector = Icons.Default.Settings,
-                        contentDescription = "সেটিংস",
+                        contentDescription = "Settings",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // v2.0 greeting + assistant status (from existing phase / key / connection state).
+        val greeting = when {
+            !keySet -> "Set up your AI key to get started"
+            connOk == false -> "Connection needs attention"
+            else -> "Good day — Doreman is ready"
+        }
+        DoremanCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                Text(
+                    text = greeting,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusChip(
+                        text = when {
+                            !keySet -> "Key missing"
+                            connOk == true -> "Connected"
+                            connOk == false -> "Connection failed"
+                            else -> "Not tested yet"
+                        },
+                        isGood = when {
+                            !keySet -> false
+                            connOk == true -> true
+                            connOk == false -> false
+                            else -> null
+                        }
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = if (handsFree) "Hands-free on" else "Hands-free off",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -216,7 +265,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                     Icon(Icons.Default.Key, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        text = "এখানে ট্যাপ করে Gemini API Key সেট করুন",
+                        text = "Tap here to set your Gemini API key",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -226,8 +275,8 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
 
         Box(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -241,7 +290,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                     reduceMotion = s.reduceMotion,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(270.dp)
+                        .height(220.dp)
                         .clickable { onMic() }
                 )
 
@@ -250,9 +299,9 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                 val liveCaption = when {
                     partial.isNotBlank() -> "“$partial”"
                     ph == Phase.Executing -> exec.text
-                    ph == Phase.Thinking -> retryStatus ?: "প্রসেস করছি…"
+                    ph == Phase.Thinking -> retryStatus ?: "Processing..."
                     lastReply.isNotBlank() -> lastReply
-                    else -> "“Doreman” বলে ডাকুন অথবা যেকোনো আদেশ দিন"
+                    else -> "Say “Doreman” or give any command"
                 }
 
                 Text(
@@ -266,6 +315,57 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                 )
+            }
+        }
+
+        // v2.0 Quick Actions — real navigation only; AI Chat stays on home.
+        SectionTitle("Quick Actions")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f)) {
+                QuickActionItem(Icons.Default.Chat, "AI Chat", "Ask anything") { /* stays on home */ }
+            }
+            Box(Modifier.weight(1f)) {
+                QuickActionItem(Icons.Default.Build, "Automations", "Manage your tasks") { nav("settings:auto") }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f)) {
+                QuickActionItem(Icons.Default.Apps, "App Control", "Launch and manage") { nav("settings:apps") }
+            }
+            Box(Modifier.weight(1f)) {
+                QuickActionItem(Icons.Default.Code, "Code Studio", "Write and run code") { nav("coding") }
+            }
+        }
+        // v2.0 Recent Activity — last 3 real chat messages only, no invented counts.
+        SectionTitle("Recent Activity")
+        val recent = messages.takeLast(3)
+        if (recent.isEmpty()) {
+            Text(
+                text = "No recent activity yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+            )
+        } else {
+            recent.forEach { m ->
+                DoremanCard(modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        Text(
+                            text = if (m.role == "user") "You" else "Doreman",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = m.text,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
             }
         }
 
@@ -288,7 +388,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     IconButton(onClick = { vm.banner.value = null }) {
-                        Icon(Icons.Default.Close, contentDescription = "বন্ধ", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -305,7 +405,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
             ) {
                 Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("থামান (STOP)", color = MaterialTheme.colorScheme.onError)
+                Text("Stop (STOP)", color = MaterialTheme.colorScheme.onError)
             }
         }
 
@@ -324,21 +424,23 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                         .padding(10.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    ToolPill(Icons.Default.Security, "১০০% পারমিশন হাব") { showTools = false; nav("settings:privacy") }
-                    ToolPill(Icons.Default.CleaningServices, "ফোন ক্লিন/বুস্ট") { showTools = false; vm.send("মোবাইল ক্লিন করো") }
-                    ToolPill(Icons.Default.Apps, "সব অ্যাপ") { showTools = false; showApps = true }
-                    ToolPill(Icons.Default.MusicNote, "গান চালাও") { showTools = false; vm.send("একটা জনপ্রিয় বাংলা গান চালাও") }
-                    ToolPill(Icons.Default.Lock, "ফোন লক") { showTools = false; vm.send("ফোন লক করো") }
-                    ToolPill(Icons.Default.PowerSettingsNew, "পাওয়ার মেনু") { showTools = false; vm.send("পাওয়ার মেনু খোলো") }
+                    ToolPill(Icons.Default.Security, "Permission Hub") { showTools = false; nav("settings:privacy") }
+                    ToolPill(Icons.Default.CleaningServices, "Clean / Boost Phone") { showTools = false; vm.send("Clean my phone") }
+                    ToolPill(Icons.Default.Apps, "All Apps") { showTools = false; showApps = true }
+                    ToolPill(Icons.Default.MusicNote, "Play Music") { showTools = false; vm.send("Play a popular song") }
+                    ToolPill(Icons.Default.Lock, "Lock Phone") { showTools = false; vm.send("Lock my phone") }
+                    ToolPill(Icons.Default.PowerSettingsNew, "Power Menu") { showTools = false; vm.send("Power Menu Open") }
                 }
             }
         }
+
+        } // end of scrollable dashboard column
 
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
             shape = RoundedCornerShape(28.dp),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -349,7 +451,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                 IconButton(onClick = { showTools = !showTools }) {
                     Icon(
                         imageVector = if (showTools) Icons.Default.Close else Icons.Default.Build,
-                        contentDescription = "টুলস",
+                        contentDescription = "Tools",
                         tint = if (showTools) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -360,7 +462,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                     modifier = Modifier.weight(1f),
                     placeholder = {
                         Text(
-                            "Doreman-কে বলুন বা লিখুন…",
+                            "Tell Doreman or type...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -385,7 +487,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                         shape = CircleShape,
                         colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Icon(Icons.Default.Send, contentDescription = "পাঠান", tint = MaterialTheme.colorScheme.onPrimary)
+                        Icon(Icons.Default.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.onPrimary)
                     }
                 } else {
                     FilledIconButton(
@@ -397,7 +499,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                     ) {
                         Icon(
                             imageVector = if (ph == Phase.Listening) Icons.Default.GraphicEq else Icons.Default.Mic,
-                            contentDescription = "ভয়েস",
+                            contentDescription = "Voice",
                             tint = if (ph == Phase.Listening) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
@@ -414,7 +516,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
         }
         AlertDialog(
             onDismissRequest = { showApps = false },
-            title = { Text("কোন অ্যাপ খুলবেন?") },
+            title = { Text("Which app should I open?") },
             text = {
                 Column {
                     OutlinedTextField(
@@ -422,7 +524,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                         onValueChange = { searchApp = it },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        label = { Text("অ্যাপের নাম লিখুন…") }
+                        label = { Text("Type the app name...") }
                     )
                     Spacer(Modifier.height(8.dp))
                     LazyColumn(Modifier.heightIn(max = 340.dp)) {
@@ -441,7 +543,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showApps = false }) { Text("বন্ধ") }
+                TextButton(onClick = { showApps = false }) { Text("Close") }
             }
         )
     }
