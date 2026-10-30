@@ -50,7 +50,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val gatewayKeySet = MutableStateFlow(a.keys.has(GATEWAY_KEY_NAME))
     val geminiKeySet = MutableStateFlow(a.keys.has(GEMINI_KEY_NAME))
     val models = MutableStateFlow<List<String>>(emptyList())
-    val conn = MutableStateFlow("এখনও পরীক্ষা করা হয়নি")
+    val conn = MutableStateFlow("Not tested yet")
     val connOk = MutableStateFlow<Boolean?>(null)
     val testingConn = MutableStateFlow(false)
     val retryStatus = MutableStateFlow<String?>(null)
@@ -127,7 +127,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val cleanedCmd = stripWakeWord(raw)
         if (cleanedCmd.isBlank()) {
             awakeForNextCommand = true
-            val greet = "হ্যাঁ বলুন, আমি শুনছি!"
+            val greet = "Yes, I am listening!"
             lastSpokenReply.value = greet
             speak(greet) {
                 if (handsFree.value && inForeground) scheduleNextListen(350)
@@ -155,7 +155,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 a.tts.stop()
                 a.chat.add(ChatMsg("user", cleanedCmd))
                 phase.value = Phase.Idle
-                handle(local, if (settings.value.lang == "bn") "লোকাল কমান্ড" else "Local command", false)
+                handle(local, if (settings.value.lang == "bn") "Local command" else "Local command", false)
                 return
             }
         }
@@ -206,7 +206,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 if (aiErr?.kind == AiError.INVALID_KEY || aiErr?.kind == AiError.NO_KEY) {
                     connOk.value = false
                 }
-                val friendly = aiErr?.userMessage() ?: "সংযোগ বা সার্ভার ত্রুটি: আবার চেষ্টা করুন।"
+                val friendly = aiErr?.userMessage() ?: "Connection or server error: please try again."
                 lastSpokenReply.value = friendly
                 banner.value = friendly
                 if (handsFree.value && inForeground) scheduleNextListen(2000)
@@ -231,8 +231,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun handle(p: Plan, modelUsed: String, usedFallback: Boolean) {
-        val reply = p.reply.ifBlank { if (p.actions.isEmpty()) "…" else "ঠিক আছে, করছি।" }
-        val badge = if (usedFallback) "$modelUsed (বিকল্প)" else modelUsed
+        val reply = p.reply.ifBlank { if (p.actions.isEmpty()) "…" else "Okay, doing that." }
+        val badge = if (usedFallback) "$modelUsed (fallback)" else modelUsed
         a.chat.add(ChatMsg(role = "model", text = reply, modelUsed = badge))
         lastSpokenReply.value = reply
 
@@ -396,7 +396,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         geminiKeySet.value = true
         keySet.value = true
         connOk.value = null
-        conn.value = "Gemini কী সংরক্ষিত হয়েছে — এবার 'Test Connection' চাপুন"
+        conn.value = "Gemini key saved — now tap 'Test Connection'"
     }
 
     fun saveGatewayKey(k: String) {
@@ -404,7 +404,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         gatewayKeySet.value = true
         keySet.value = true
         connOk.value = null
-        conn.value = "Gateway API Key (sk-...) সংরক্ষিত হয়েছে — এবার 'Test Connection' চাপুন"
+        conn.value = "Gateway API key (sk-...) saved — now tap 'Test Connection'"
     }
 
     fun deleteKey() {
@@ -415,30 +415,30 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         keySet.value = false
         connOk.value = false
         models.value = emptyList()
-        conn.value = "API key মুছে ফেলা হয়েছে"
+        conn.value = "API key deleted"
     }
 
     fun testConnection() {
         viewModelScope.launch {
             testingConn.value = true
             val mode = settings.value.providerMode
-            conn.value = if (mode == "gateway") "কাস্টম গেটওয়ে (${settings.value.gatewayBaseUrl})-এর সাথে সংযোগ পরীক্ষা চলছে…"
-            else "Google Gemini সার্ভারের সাথে সংযোগ পরীক্ষা চলছে…"
+            conn.value = if (mode == "gateway") "Testing connection to the custom gateway (${settings.value.gatewayBaseUrl})..."
+            else "Testing connection to the Google Gemini server..."
 
             currentProvider().listModels().onSuccess { list ->
                 models.value = list
                 connOk.value = list.isNotEmpty()
                 if (list.isEmpty()) {
-                    conn.value = "সংযোগ হয়েছে কিন্তু কোনো মডেল পাওয়া যায়নি।"
+                    conn.value = "Connected, but no models were found."
                 } else {
                     val cur = settings.value.model
-                    var msg = "✓ সংযোগ সফল — ${list.size}টি মডেল পাওয়া গেছে"
+                    var msg = "✓ Connection successful — ${list.size} models found"
                     if (cur !in list) {
                         val pick = list.firstOrNull { it.contains("claude", true) || it.contains("flash", true) || it.contains("gpt", true) }
                             ?: list.firstOrNull()
                         if (pick != null) {
                             a.prefs.set(K.model, pick)
-                            msg += "। মডেল হিসেবে '$pick' সেট করা হয়েছে"
+                            msg += ". Set as model: '$pick'"
                         }
                     }
                     conn.value = msg
@@ -446,7 +446,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }.onFailure { e ->
                 if (e is CancellationException) throw e
                 connOk.value = false
-                conn.value = (e as? AiException)?.userMessage() ?: "ত্রুটি: ${e.message}"
+                conn.value = (e as? AiException)?.userMessage() ?: "Error: ${e.message}"
             }
             testingConn.value = false
         }
