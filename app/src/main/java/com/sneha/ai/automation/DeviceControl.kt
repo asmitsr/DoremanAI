@@ -38,13 +38,13 @@ object DeviceControl {
             val cm = ctx.getSystemService(Context.CAMERA_SERVICE) as CameraManager
             val id = cm.cameraIdList.firstOrNull { id ->
                 try { cm.getCameraCharacteristics(id).get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE) == true } catch (_: Exception) { false }
-            } ?: return Pair(false, "ফ্ল্যাশলাইট আছে এমন ক্যামেরা পাওয়া যায়নি")
+            } ?: return Pair(false, "No camera with a flashlight was found")
             cm.setTorchMode(id, on)
-            Pair(true, if (on) "ফ্ল্যাশলাইট জ্বালানো হয়েছে" else "ফ্ল্যাশলাইট নিভিয়ে দেওয়া হয়েছে")
+            Pair(true, if (on) "Flashlight turned on" else "Flashlight turned off")
         } catch (e: SecurityException) {
-            Pair(false, "ফ্ল্যাশলাইটের জন্য Camera অনুমতি দিন (Settings > Permission Setup Hub)")
+            Pair(false, "Allow the Camera permission for the flashlight (Settings > Permission Setup Hub)")
         } catch (e: Exception) {
-            Pair(false, "ফ্ল্যাশলাইট চালানো যায়নি: ${e.message}")
+            Pair(false, "Could not turn on the flashlight: ${e.message}")
         }
     }
 
@@ -55,11 +55,11 @@ object DeviceControl {
         return try {
             val wm = wifiManager(ctx)
             val ssid = try { wm.connectionInfo?.ssid?.removeSurrounding("\"") } catch (_: Exception) { null }
-            if (!wm.isWifiEnabled) Pair(true, "WiFi এখন বন্ধ আছে")
-            else if (!ssid.isNullOrBlank() && ssid != "<unknown ssid>") Pair(true, "WiFi চালু আছে, কানেক্টেড: $ssid")
-            else Pair(true, "WiFi চালু আছে, কিন্তু কোনো নেটওয়ার্কে কানেক্টেড দেখাচ্ছে না")
+            if (!wm.isWifiEnabled) Pair(true, "WiFi is currently off")
+            else if (!ssid.isNullOrBlank() && ssid != "<unknown ssid>") Pair(true, "WiFi is on, connected to: $ssid")
+            else Pair(true, "WiFi is on, but no network appears connected")
         } catch (e: Exception) {
-            Pair(false, "WiFi স্ট্যাটাস পড়া যায়নি: ${e.message}")
+            Pair(false, "Could not read WiFi status: ${e.message}")
         }
     }
 
@@ -74,39 +74,39 @@ object DeviceControl {
         return when (a.mode) {
             "status" -> wifiStatus(ctx)
             "on", "off" -> {
-                val wm = try { wifiManager(ctx) } catch (e: Exception) { return Pair(false, "WiFi ম্যানেজার পাওয়া যায়নি") }
+                val wm = try { wifiManager(ctx) } catch (e: Exception) { return Pair(false, "WiFi manager not found") }
                 val wantOn = a.mode == "on"
                 if (wm.isWifiEnabled == wantOn) {
-                    return Pair(true, if (wantOn) "WiFi আগেই চালু আছে" else "WiFi আগেই বন্ধ আছে")
+                    return Pair(true, if (wantOn) "WiFi is already on" else "WiFi is already off")
                 }
                 // Android 10+: setWifiEnabled() always fails for normal apps.
                 // Do NOT silently pretend it worked — open the panel instead.
                 val opened = openPanel(ctx, AndroidSettings.ACTION_WIFI_SETTINGS)
                 if (opened) Pair(
                     true,
-                    "Android 10+ এ অ্যাপ সরাসরি WiFi " + (if (wantOn) "চালু" else "বন্ধ") +
-                        " করতে পারে না, তাই WiFi সেটিংস খুলে দিয়েছি — উপরের টগলটা একবার চাপুন"
-                ) else Pair(false, "WiFi সেটিংস খোলা যায়নি")
+                    "On Android 10+, an app cannot switch WiFi " + (if (wantOn) "on" else "off") +
+                        " directly, so I opened WiFi settings — tap the toggle at the top once"
+                ) else Pair(false, "Could not open WiFi settings")
             }
             "connect" -> {
                 val ssid = a.ssid?.trim().orEmpty()
-                if (ssid.isEmpty()) return Pair(false, "কোন WiFi-তে কানেক্ট করব, নামটা বলুন (যেমন: আমার WiFi-তে কানেক্ট করো)")
+                if (ssid.isEmpty()) return Pair(false, "Which WiFi network should I connect to? Tell me its name (for example: connect to my WiFi)")
                 if (svc == null) {
                     val opened = openPanel(ctx, AndroidSettings.ACTION_WIFI_SETTINGS)
-                    return if (opened) Pair(true, "WiFi সেটিংস খুলেছি — তালিকা থেকে $ssid বেছে নিন (স্বয়ংক্রিয় ট্যাপের জন্য Accessibility চালু করুন)")
-                    else Pair(false, "WiFi সেটিংস খোলা যায়নি")
+                    return if (opened) Pair(true, "I opened WiFi settings — pick $ssid from the list (turn on Accessibility for auto-tap)")
+                    else Pair(false, "Could not open WiFi settings")
                 }
                 openPanel(ctx, AndroidSettings.ACTION_WIFI_SETTINGS)
                 delay(2200)
                 val tapped = svc.tapByText(ssid)
                 delay(1600)
-                if (!tapped) return Pair(true, "WiFi সেটিংস খুলেছি, কিন্তু তালিকায় $ssid পাইনি — নিজে বেছে নিন")
+                if (!tapped) return Pair(true, "I opened WiFi settings, but $ssid was not in the list — pick it yourself")
                 // If it connected without a password prompt, the SSID is saved/open.
                 // If a password prompt appeared, typeText() refuses password
                 // fields by design, so the user must type it once themselves.
-                Pair(true, "$ssid-এ ট্যাপ করা হয়েছে। পাসওয়ার্ড চাইলে নিজে টাইপ করে Connect চাপুন, সেভ করা নেটওয়ার্ক হলে নিজেই কানেক্ট হবে")
+                Pair(true, "$ssid was tapped. If a password is asked, type it yourself and tap Connect; a saved network will connect on its own")
             }
-            else -> Pair(false, "অজানা WiFi কমান্ড: ${a.mode}")
+            else -> Pair(false, "Unknown WiFi command: ${a.mode}")
         }
     }
 
@@ -119,60 +119,60 @@ object DeviceControl {
         // function compiles without ?. on every call.
         val rawAdapter: BluetoothAdapter? = try { BluetoothAdapter.getDefaultAdapter() } catch (_: Exception) { null }
         val adapter: BluetoothAdapter = rawAdapter
-            ?: return Pair(false, "এই ফোনে Bluetooth পাওয়া যায়নি")
+            ?: return Pair(false, "Bluetooth was not found on this phone")
         return when (a.mode) {
             "list" -> {
                 val names = try { adapter.bondedDevices.mapNotNull { it.name }.filter { it.isNotBlank() } } catch (_: SecurityException) {
-                    return Pair(false, "পেয়ার করা ডিভাইস দেখতে Bluetooth অনুমতি দিন (Settings > Permission Setup Hub)")
+                    return Pair(false, "Allow the Bluetooth permission to see paired devices (Settings > Permission Setup Hub)")
                 } catch (_: Exception) { emptyList() }
-                if (names.isEmpty()) Pair(true, "কোনো পেয়ার করা Bluetooth ডিভাইস পাওয়া যায়নি")
-                else Pair(true, "পেয়ার করা ডিভাইস: " + names.joinToString(", "))
+                if (names.isEmpty()) Pair(true, "No paired Bluetooth devices found")
+                else Pair(true, "Paired devices: " + names.joinToString(", "))
             }
             "on" -> {
-                if (adapter.isEnabled) return Pair(true, "Bluetooth আগেই চালু আছে")
+                if (adapter.isEnabled) return Pair(true, "Bluetooth is already on")
                 val ok = try { adapter.enable() } catch (_: SecurityException) {
-                    return Pair(false, "Bluetooth চালু করতে Bluetooth অনুমতি দিন (Settings > Permission Setup Hub)")
+                    return Pair(false, "Allow the Bluetooth permission to turn on Bluetooth (Settings > Permission Setup Hub)")
                 } catch (_: Exception) { false }
-                if (ok) return Pair(true, "Bluetooth চালু করা হচ্ছে")
+                if (ok) return Pair(true, "Turning Bluetooth on")
                 // Fallback: the system enable dialog (user taps Allow once).
                 try {
                     ctx.startActivity(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                    Pair(true, "Bluetooth চালুর অনুমতি চাওয়া হয়েছে — Allow চাপুন")
+                    Pair(true, "Bluetooth permission was requested — tap Allow")
                 } catch (_: Exception) {
                     val opened = openPanel(ctx, AndroidSettings.ACTION_BLUETOOTH_SETTINGS)
-                    if (opened) Pair(true, "Bluetooth সেটিংস খুলেছি — উপরের টগলটা চাপুন") else Pair(false, "Bluetooth চালু করা যায়নি")
+                    if (opened) Pair(true, "I opened Bluetooth settings — tap the toggle at the top") else Pair(false, "Could not turn on Bluetooth")
                 }
             }
             "off" -> {
-                if (!adapter.isEnabled) return Pair(true, "Bluetooth আগেই বন্ধ আছে")
+                if (!adapter.isEnabled) return Pair(true, "Bluetooth is already off")
                 val ok = try { adapter.disable() } catch (_: SecurityException) {
-                    return Pair(false, "Bluetooth বন্ধ করতে Bluetooth অনুমতি দিন")
+                    return Pair(false, "Allow the Bluetooth permission to turn off Bluetooth")
                 } catch (_: Exception) { false }
-                if (ok) Pair(true, "Bluetooth বন্ধ করা হচ্ছে")
+                if (ok) Pair(true, "Turning Bluetooth off")
                 else {
                     val opened = openPanel(ctx, AndroidSettings.ACTION_BLUETOOTH_SETTINGS)
-                    if (opened) Pair(true, "Bluetooth সেটিংস খুলেছি — উপরের টগলটা চাপুন") else Pair(false, "Bluetooth বন্ধ করা যায়নি")
+                    if (opened) Pair(true, "I opened Bluetooth settings — tap the toggle at the top") else Pair(false, "Could not turn off Bluetooth")
                 }
             }
             "connect" -> {
                 val device = a.device?.trim().orEmpty()
-                if (device.isEmpty()) return Pair(false, "কোন ডিভাইসে কানেক্ট করব, নামটা বলুন")
-                if (!adapter.isEnabled) return Pair(false, "আগে Bluetooth চালু করুন, তারপর ডিভাইসে কানেক্ট করব")
+                if (device.isEmpty()) return Pair(false, "Which device should I connect to? Tell me its name")
+                if (!adapter.isEnabled) return Pair(false, "Turn on Bluetooth first, then I will connect to the device")
                 if (svc == null) {
                     val opened = openPanel(ctx, AndroidSettings.ACTION_BLUETOOTH_SETTINGS)
-                    return if (opened) Pair(true, "Bluetooth সেটিংস খুলেছি — তালিকা থেকে $device বেছে নিন (স্বয়ংক্রিয় ট্যাপের জন্য Accessibility চালু করুন)")
-                    else Pair(false, "Bluetooth সেটিংস খোলা যায়নি")
+                    return if (opened) Pair(true, "I opened Bluetooth settings — pick $device from the list (turn on Accessibility for auto-tap)")
+                    else Pair(false, "Bluetooth Could not open settings")
                 }
                 openPanel(ctx, AndroidSettings.ACTION_BLUETOOTH_SETTINGS)
                 delay(2200)
                 val tapped = svc.tapByText(device)
                 delay(2000)
                 val connected = try { adapter.getProfileConnectionState(BluetoothProfile.A2DP) == BluetoothProfile.STATE_CONNECTED } catch (_: Exception) { false }
-                if (tapped && connected) Pair(true, "$device-এ কানেক্ট করা হয়েছে")
-                else if (tapped) Pair(true, "$device-এ ট্যাপ করা হয়েছে — ডিভাইসে Confirm/Pair চাইলে সেটা চাপুন")
-                else Pair(true, "Bluetooth সেটিংস খুলেছি, কিন্তু তালিকায় $device পাইনি — পেয়ার করা আছে কিনা দেখুন")
+                if (tapped && connected) Pair(true, "$device connected")
+                else if (tapped) Pair(true, "$device tapped — if the device asks for Confirm/Pair, tap that")
+                else Pair(true, "I opened Bluetooth settings, but $device was not in the list — check whether it is paired")
             }
-            else -> Pair(false, "অজানা Bluetooth কমান্ড: ${a.mode}")
+            else -> Pair(false, "Unknown Bluetooth command: ${a.mode}")
         }
     }
 }
