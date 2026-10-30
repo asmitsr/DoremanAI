@@ -1,27 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  v1.2.0 — Bengali strings. Same keys as values/strings.xml.
-  Selected when Settings > Voice > Language is set to Bengali (Prefs.lang = "bn").
-  Note: this does not yet translate every hard-coded literal in
-  HomeScreen.kt / SettingsScreen.kt — see CHANGELOG.md.
+  v2.0 — English strings. The values-bn folder previously held Bengali
+  strings; in v2.0 it holds the same English strings, so no Bengali
+  text remains in resources. These keys are the foundation for UI translation;
+  see CHANGELOG.md: HomeScreen/SettingsScreen still contain some hard-coded
+  literals, so this is NOT yet a complete UI translation.
 -->
 <resources>
     <string name="app_name">Doreman</string>
-    <string name="a11y_desc">শুধু আপনার নির্দেশে Doreman অন্য অ্যাপে ট্যাপ, স্ক্রল, টেক্সট লেখা, গেম ইনস্টল, মেসেজ পাঠানো এবং স্ক্রিনের লেবেল পড়তে পারবে।</string>
-    <string name="home_hint">Doreman-কে বলুন বা লিখুন…</string>
-    <string name="home_call_to_action">“Doreman” বলে ডাকুন অথবা যেকোনো আদেশ দিন</string>
-    <string name="home_stop">থামান (STOP)</string>
-    <string name="home_which_app">কোন অ্যাপ খুলবেন?</string>
-    <string name="home_app_name_hint">অ্যাপের নাম লিখুন…</string>
-    <string name="home_close">বন্ধ</string>
-    <string name="settings_language">ভাষা / Language</string>
-    <string name="settings_language_bn">বাংলা (Bengali)</string>
+    <string name="a11y_desc">Lets Doreman tap, scroll, type, install apps and send messages when you ask it to.</string>
+    <string name="home_hint">Tell Doreman or type…</string>
+    <string name="home_call_to_action">Say “Doreman” or give any command</string>
+    <string name="home_stop">Stop (STOP)</string>
+    <string name="home_which_app">Which app should I open?</string>
+    <string name="home_app_name_hint">Type the app name…</string>
+    <string name="home_close">Close</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_bn">Bengali</string>
     <string name="settings_language_en">English</string>
-    <string name="settings_theme">থিম নির্বাচন</string>
-    <string name="settings_theme_dark">ডার্ক (Deep Cosmic Dark)</string>
-    <string name="settings_theme_light">লাইট (Clean Daylight)</string>
-    <string name="settings_theme_system">সিস্টেম ডিফল্ট</string>
-    <string name="settings_theme_midnight">মিডনাইট ইন্ডিগো (Midnight Indigo #282B4A + Vanilla #EEEBDA)</string>
-    <string name="settings_voice_test">ভয়েস টেস্ট</string>
-    <string name="settings_gateway_tip">Base URL, Auth Scheme (Bearer / x-api-key), Format (OpenAI / Anthropic) ও মডেলের নাম — চারটাই আপনার গেটওয়ের সাথে মিলতে হবে। 401 মানে ভুল কী, 404 মানে ভুল মডেল/URL।</string>
+    <string name="settings_theme">Choose theme</string>
+    <string name="settings_theme_dark">Dark (Deep Cosmic Dark)</string>
+    <string name="settings_theme_light">Light (Clean Daylight)</string>
+    <string name="settings_theme_system">System default</string>
+    <string name="settings_theme_midnight">Midnight Indigo (#282B4A + Vanilla #EEEBDA)</string>
+    <string name="settings_voice_test">Voice test</string>
+    <string name="settings_gateway_tip">Base URL, Auth Scheme, Format and model name must all match your gateway. 401 means wrong key, 404 means wrong model or URL.</string>
 </resources>
