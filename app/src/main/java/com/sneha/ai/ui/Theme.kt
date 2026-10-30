@@ -1,7 +1,9 @@
 package com.sneha.ai.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -10,7 +12,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+// v2.0: shared shapes — small 12dp, medium 16dp, large 20dp.
+// Existing colour schemes and the SnehaTheme signature are unchanged.
+private val DoremanShapes = Shapes(
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp)
+)
 
 private val DarkScheme = darkColorScheme(
     primary = Color(0xFF9B7BFF),
@@ -116,6 +127,7 @@ fun SnehaTheme(mode: String, fontScale: Float, content: @Composable () -> Unit) 
         MaterialTheme(
             colorScheme = scheme,
             typography = typo,
+            shapes = DoremanShapes,
             content = content
         )
     }
