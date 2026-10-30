@@ -10,7 +10,7 @@ import java.util.UUID
 
 data class MemoryEntry(val id: String, val text: String)
 
-/** ব্যবহারকারী-নিয়ন্ত্রিত লোকাল মেমরি। শুধু ফোনের অভ্যন্তরীণ স্টোরেজে থাকে। */
+/** User-controlled local memory. It stays only in the phone's internal storage. */
 class MemoryStore(ctx: Context) {
     private val file = File(ctx.filesDir, "memory.json")
     private val _items = MutableStateFlow(load())
@@ -31,19 +31,19 @@ class MemoryStore(ctx: Context) {
         _items.value = l
     }
 
-    /** সফল হলে null, নইলে ত্রুটির বার্তা */
+    /** Null on success, otherwise an error message */
     fun add(text: String): String? {
         val t = text.trim()
-        if (t.isEmpty()) return "খালি লেখা সংরক্ষণ করা যায় না"
-        if (looksSensitive(t)) return "পাসওয়ার্ড/কী/OTP/কার্ড নম্বরের মতো সংবেদনশীল তথ্য সংরক্ষণ করা হয় না"
+        if (t.isEmpty()) return "Empty text cannot be saved"
+        if (looksSensitive(t)) return "Sensitive information like passwords, keys, OTPs, or card numbers is not saved"
         persist(_items.value + MemoryEntry(UUID.randomUUID().toString(), t.take(300)))
         return null
     }
 
     fun update(id: String, text: String): String? {
         val t = text.trim()
-        if (t.isEmpty()) return "খালি লেখা সংরক্ষণ করা যায় না"
-        if (looksSensitive(t)) return "সংবেদনশীল তথ্য সংরক্ষণ করা হয় না"
+        if (t.isEmpty()) return "Empty text cannot be saved"
+        if (looksSensitive(t)) return "Sensitive information is not saved"
         persist(_items.value.map { if (it.id == id) it.copy(text = t.take(300)) else it })
         return null
     }
