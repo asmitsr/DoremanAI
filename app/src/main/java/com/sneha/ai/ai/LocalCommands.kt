@@ -9,7 +9,7 @@ package com.sneha.ai.ai
  * invented here. Call, SMS and WhatsApp actions are NOT fast-pathed here:
  * their target/message parsing is ambiguous in free speech, so they stay
  * with the LLM JSON plan (which already handles phonetic names and
- * letter-spelling, e.g. "এম এ" -> "MA"). Call IS fast-pathed because its
+ * letter-spelling, e.g. "Bengali command Bengali command" -> "MA"). Call IS fast-pathed because its
  * target is a single contact name and placeCall() already handles
  * "not found / no permission" gracefully.
  *
@@ -27,11 +27,10 @@ object LocalCommands {
         // WhatsApp message from a plain call. A plain call here only ever
         // returns Action.CallContact, never a WhatsApp action.
         if (lower.contains("whatsapp") || lower.contains("হোয়াটসঅ্যাপ")) return null
-        val bn = lang == "bn"
-        val ok = if (bn) "ঠিক আছে, করছি।" else "Okay, doing that."
+        val ok = "Okay, doing that." // v2.0: visible replies are English; Bengali command matching below is kept for compatibility
 
         // --- v1.3.0: full-phone device control (checked BEFORE open-app,
-        // so "ওয়াইফাই খোলো" does not become an app search) ----------------
+        // so "Bengali command Bengali command" does not become an app search) ----------------
         // Flashlight / torch
         when {
             lower.contains("ফ্ল্যাশলাইট জ্বালাও") || lower.contains("ফ্ল্যাশলাইট জ্বালিয়ে দাও") ||
@@ -42,8 +41,8 @@ object LocalCommands {
                 lower.contains("টর্চ বন্ধ") || lower.contains("flashlight off") || lower.contains("torch off") ->
                 return Plan(ok, listOf(Action.Flashlight(false)), emptyList())
         }
-        // WiFi connect to a named network: "X ওয়াইফাইতে কানেক্ট করো" /
-        // "ওয়াইফাই কানেক্ট করো X" / "connect wifi X"
+        // WiFi connect to a named network: "X Bengali command Bengali command Bengali command" /
+        // "Bengali command Bengali command Bengali command X" / "connect wifi X"
         val wifiConnect = extractBeforeSuffix(lower, listOf(" ওয়াইফাইতে কানেক্ট করো", " ওয়াইফাই-তে কানেক্ট করো", " wifi তে কানেক্ট করো"))
             ?: extractAfterPrefix(lower, listOf("ওয়াইফাই কানেক্ট করো ", "wifi কানেক্ট করো ", "connect wifi ", "connect to wifi "))
         if (wifiConnect != null && wifiConnect.length in 1..60) {
@@ -57,7 +56,7 @@ object LocalCommands {
             lower.contains("ওয়াইফাই স্ট্যাটাস") || lower.contains("wifi status") ->
                 return Plan(ok, listOf(Action.Wifi("status")), emptyList())
         }
-        // Bluetooth connect: "ব্লুটুথে X কানেক্ট করো" / "connect bluetooth X"
+        // Bluetooth connect: "Bengali command X Bengali command Bengali command" / "connect bluetooth X"
         val btConnect = extractBeforeSuffix(lower, listOf(" ব্লুটুথে কানেক্ট করো", " bluetooth এ কানেক্ট করো"))
             ?: extractAfterPrefix(lower, listOf("ব্লুটুথে কানেক্ট করো ", "connect bluetooth ", "bluetooth connect "))
         if (btConnect != null && btConnect.length in 1..60) {
@@ -71,7 +70,7 @@ object LocalCommands {
             lower.contains("পেয়ার করা ডিভাইস") || lower.contains("paired bluetooth") || lower.contains("bluetooth devices") ->
                 return Plan(ok, listOf(Action.Bluetooth("list")), emptyList())
         }
-        // Screen: "স্ক্রিনে কী আছে" / "what's on my screen"
+        // Screen: "Bengali command Bengali command Bengali command" / "what's on my screen"
         if (lower.contains("স্ক্রিনে কী আছে") || lower.contains("স্ক্রিন পড়ো") ||
             lower.contains("what's on my screen") || lower.contains("what is on my screen") ||
             lower.contains("read the screen")) {
@@ -87,14 +86,14 @@ object LocalCommands {
         }
 
         // --- Call a contact -------------------------------------------------
-        // "বাবাকে কল দাও" / "বাবাকে ফোন করো" / "call Baba" / "Baba কে কল দাও"
+        // "Bengali command Bengali command Bengali command" / "Bengali command Bengali command Bengali command" / "call Baba" / "Baba Bengali command Bengali command Bengali command"
         val callTarget = extractCallTarget(raw, lower)
         if (callTarget != null) {
             return Plan(ok, listOf(Action.CallContact(callTarget)), emptyList())
         }
 
         // --- Open an app ----------------------------------------------------
-        // "YouTube খোলো" / "খোলো YouTube" / "open YouTube"
+        // "YouTube Bengali command" / "Bengali command YouTube" / "open YouTube"
         val openTarget = extractAfterAny(lower, listOf(" খোলো", " খুলো", " open "))
             ?: extractAfterPrefix(lower, listOf("খোলো ", "খুলো ", "open "))
             ?: extractBeforeSuffix(lower, listOf(" খোলো", " খুলো"))
@@ -103,7 +102,7 @@ object LocalCommands {
         }
 
         // --- Play Store install / download ----------------------------------
-        // "Free Fire ডাউনলোড করো" / "download Free Fire" / "install eFootball"
+        // "Free Fire Bengali command Bengali command" / "download Free Fire" / "install eFootball"
         val installQuery = extractBeforeSuffix(
             lower,
             listOf(" ডাউনলোড করো", " ডাউনলোড কর", " ইনস্টল করো", " ইনস্টল কর")
@@ -113,7 +112,7 @@ object LocalCommands {
         }
 
         // --- YouTube search --------------------------------------------------
-        // "ইউটিউবে অরিজিৎ সিং চালাও" / "youtube search Arijit Singh"
+        // "Bengali command Bengali command Bengali command Bengali command" / "youtube search Arijit Singh"
         val ytQuery = extractAfterAny(lower, listOf("ইউটিউবে ", "youtube search ", "youtube "))
             ?.removeSuffix(" চালাও")?.removeSuffix(" চালান")?.removeSuffix(" play")?.trim()
         if (ytQuery != null && ytQuery.length in 2..120) {
@@ -148,7 +147,7 @@ object LocalCommands {
     }
 
     private fun extractCallTarget(raw: String, lower: String): String? {
-        // "X কে কল দাও / ফোন করো / কল করো" — X is the contact name.
+        // "X Bengali command Bengali command Bengali command / Bengali command Bengali command / Bengali command Bengali command" — X is the contact name.
         val suffixes = listOf("কে কল দাও", "কে কল করো", "কে ফোন করো", "কে ফোন দাও", "কে কল দাও।")
         for (s in suffixes) {
             val idx = lower.indexOf(s)
