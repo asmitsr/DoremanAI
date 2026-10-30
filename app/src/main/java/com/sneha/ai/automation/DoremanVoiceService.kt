@@ -77,7 +77,7 @@ class DoremanVoiceService : Service() {
         val nm = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26) {
             nm.createNotificationChannel(
-                NotificationChannel(CH, "Doreman শুনছে", NotificationManager.IMPORTANCE_LOW)
+                NotificationChannel(CH, "Doreman is listening", NotificationManager.IMPORTANCE_LOW)
             )
         }
         val open = PendingIntent.getActivity(
@@ -92,12 +92,12 @@ class DoremanVoiceService : Service() {
         )
         val n = NotificationCompat.Builder(this, CH)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentTitle("Doreman চালু আছে")
-            .setContentText("অন্য অ্যাপে থাকলেও ফ্লোটিং বোতামে ট্যাপ করলেই শুনবে")
+            .setContentTitle("Doreman is running")
+            .setContentText("Even in another app, tap the floating button to be heard")
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(open)
-            .addAction(android.R.drawable.ic_delete, "বন্ধ করুন", stop)
+            .addAction(android.R.drawable.ic_delete, "Stop", stop)
             .build()
         if (Build.VERSION.SDK_INT >= 30) {
             try {
