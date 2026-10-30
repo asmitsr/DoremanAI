@@ -10,7 +10,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-/** API key ইত্যাদি Android Keystore (AES-GCM) দিয়ে এনক্রিপ্ট করে রাখে। লগ/এক্সপোর্টে যায় না। */
+/** Keeps API keys and similar secrets encrypted with Android Keystore (AES-GCM). They never go into logs or exports. */
 class SecureKeyStore(private val ctx: Context) {
     private val alias = "sneha_secret_key"
     private val sp get() = ctx.getSharedPreferences("secure_store", Context.MODE_PRIVATE)
