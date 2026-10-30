@@ -140,7 +140,7 @@ class GeminiProvider(private val keys: SecureKeyStore) : AiProvider {
                 val fallback = selectVerifiedFallbackModel(primaryModel, cfg.fallbackModel)
                     ?: throw primaryErr
 
-                onStatus?.invoke("প্রাথমিক মডেলে চাপ বেশি — বিকল্প মডেল ($fallback) দিয়ে চেষ্টা করছি…")
+                onStatus?.invoke("The primary model is under heavy load — trying the fallback model ($fallback)...")
                 val reply = executeWithRetry(
                     system = system,
                     history = history,
@@ -218,14 +218,14 @@ class GeminiProvider(private val keys: SecureKeyStore) : AiProvider {
                 attempt++
 
                 val reasonBn = when (e.kind) {
-                    AiError.HIGH_DEMAND -> "সার্ভারে অতিরিক্ত চাপ (503)"
-                    AiError.RATE_LIMIT -> "রেট লিমিট (429)"
-                    AiError.TIMEOUT -> "টাইমআউট"
-                    AiError.NETWORK -> "নেটওয়ার্ক সমস্যা"
-                    else -> "সার্ভার ব্যস্ত"
+                    AiError.HIGH_DEMAND -> "Server overloaded (503)"
+                    AiError.RATE_LIMIT -> "Rate limit (429)"
+                    AiError.TIMEOUT -> "Timeout"
+                    AiError.NETWORK -> "Network problem"
+                    else -> "Server busy"
                 }
                 val sec = "%.1f".format(waitMs / 1000.0)
-                onStatus?.invoke("$reasonBn —${sec} সেকেন্ড পর আবার চেষ্টা করছি ($attempt/$maxRetries)…")
+                onStatus?.invoke("$reasonBn —${sec} seconds, retrying (attempt $attempt/$maxRetries)...")
                 delay(waitMs)
             }
         }
@@ -264,7 +264,7 @@ class GeminiProvider(private val keys: SecureKeyStore) : AiProvider {
             val br = resp.optJSONObject("promptFeedback")?.optString("blockReason").orEmpty()
             throw AiException(
                 AiError.BLOCKED,
-                if (br.isNotBlank()) "নিরাপত্তা ফিল্টারে উত্তর ব্লক হয়েছে ($br)" else "উত্তর পাওয়া যায়নি (কোনো candidate নেই)"
+                if (br.isNotBlank()) "Reply blocked by the safety filter ($br)" else "No reply received (no candidates)"
             )
         }
         val c0 = cands.getJSONObject(0)
@@ -283,7 +283,7 @@ class GeminiProvider(private val keys: SecureKeyStore) : AiProvider {
             val fr = c0.optString("finishReason", "UNKNOWN")
             throw AiException(
                 AiError.BLOCKED,
-                "খালি উত্তর এসেছে (finishReason=$fr) — Settings > AI Brain থেকে সর্বোচ্চ আউটপুট টোকেন বাড়িয়ে দেখুন।"
+                "Empty reply received (finishReason=$fr) — try increasing the maximum output tokens in Settings > AI Brain."
             )
         }
         val u = resp.optJSONObject("usageMetadata")
