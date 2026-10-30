@@ -149,11 +149,11 @@ class CommsHelper(private val ctx: Context) {
             resolvedNumber = raw
         } else {
             if (!hasContactsPerm()) {
-                return false to "কন্টাক্টস অনুমতি নেই। Settings > পারমিশন সেটআপ থেকে অনুমতি দিন।"
+                return false to "Contacts permission is missing. Allow it from Settings > Permission Setup."
             }
             val matches = searchContacts(raw)
             if (matches.isEmpty()) {
-                return false to "'$raw' (${Translit.bnToLatin(raw)}) নামে কোনো কন্টাক্ট নম্বর খুঁজে পাওয়া যায়নি।"
+                return false to "'$raw' (${Translit.bnToLatin(raw)}) — no contact number was found under that name."
             }
             resolvedName = matches.first().name
             resolvedNumber = matches.first().number
@@ -164,7 +164,7 @@ class CommsHelper(private val ctx: Context) {
             if (hasCallPerm()) {
                 val i = Intent(Intent.ACTION_CALL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 ctx.startActivity(i)
-                true to "$resolvedName ($resolvedNumber)-এ সরাসরি কল শুরু করা হয়েছে।"
+                true to "$resolvedName ($resolvedNumber) — direct call started."
             } else {
                 val i = Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 ctx.startActivity(i)
@@ -173,10 +173,10 @@ class CommsHelper(private val ctx: Context) {
                 // the dial pad was opened and the green call button must
                 // still be pressed, and that granting Call permission
                 // would make it a direct call.
-                true to "$resolvedName ($resolvedNumber)-এর জন্য ডায়াল প্যাড খোলা হয়েছে — কল করতে সবুজ কল বোতাম চাপতে হবে (সরাসরি কল করতে Call permission দিন)।"
+                true to "$resolvedName ($resolvedNumber) — dial pad opened. Tap the green call button to call (allow the Call permission for direct calling)."
             }
         } catch (e: Exception) {
-            false to "কল করা যায়নি: ${e.message}"
+            false to "Could not call: ${e.message}"
         }
     }
 
@@ -191,11 +191,11 @@ class CommsHelper(private val ctx: Context) {
             resolvedNumber = raw
         } else {
             if (!hasContactsPerm()) {
-                return false to "কন্টাক্টস অনুমতি নেই। Settings > পারমিশন সেটআপ থেকে অনুমতি দিন।"
+                return false to "Contacts permission is missing. Allow it from Settings > Permission Setup."
             }
             val matches = searchContacts(raw)
             if (matches.isEmpty()) {
-                return false to "'$raw' নামে কোনো কন্টাক্ট নম্বর পাওয়া যায়নি।"
+                return false to "'$raw' — no contact number was found under that name."
             }
             resolvedName = matches.first().name
             resolvedNumber = matches.first().number
@@ -210,16 +210,16 @@ class CommsHelper(private val ctx: Context) {
                     SmsManager.getDefault()
                 }
                 smsManager.sendTextMessage(resolvedNumber, null, message, null, null)
-                true to "$resolvedName ($resolvedNumber)-কে সরাসরি SMS পাঠানো হয়েছে।"
+                true to "$resolvedName ($resolvedNumber) — SMS sent directly."
             } else {
                 val i = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + Uri.encode(resolvedNumber)))
                     .putExtra("sms_body", message)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 ctx.startActivity(i)
-                true to "Messages অ্যাপে $resolvedName-এর মেসেজ খোলা হয়েছে।"
+                true to "In the Messages app, $resolvedName's message thread opened."
             }
         } catch (e: Exception) {
-            false to "SMS পাঠানো যায়নি: ${e.message}"
+            false to "Could not send SMS: ${e.message}"
         }
     }
 
@@ -258,11 +258,11 @@ class CommsHelper(private val ctx: Context) {
                     ctx.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     true to "SEARCH_IN_WA:$displayName"
                 } else {
-                    false to "WhatsApp ইনস্টল করা নেই"
+                    false to "WhatsApp is not installed"
                 }
             }
         } catch (e: Exception) {
-            false to "WhatsApp খোলা যায়নি: ${e.message}"
+            false to "Could not open WhatsApp: ${e.message}"
         }
     }
 }
