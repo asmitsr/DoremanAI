@@ -52,29 +52,29 @@ class AiException(
 
     fun userMessage(): String = when (kind) {
         AiError.NO_KEY ->
-            "Gemini API key সেট করা নেই। Settings > AI Brain-এ গিয়ে আপনার API key দিন।"
+            "Gemini API key is not set. Go to Settings > AI Brain and enter your API key."
         AiError.INVALID_KEY ->
-            "API key সঠিক নয় বা ব্লক/অনুমতিহীন। Google AI Studio থেকে নতুন API key নিয়ে Settings > AI Brain-এ দিন।"
+            "The API key is incorrect, blocked, or not authorised. Get a new API key from Google AI Studio and enter it in Settings > AI Brain."
         AiError.QUOTA ->
-            "আপনার API অ্যাকাউন্টের দৈনিক কোটা বা বিলিং লিমিট শেষ হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন বা অন্য মডেল বেছে নিন।"
+            "Your API account's daily quota or billing limit is exhausted. Try again later or choose another model."
         AiError.RATE_LIMIT ->
-            "অল্প সময়ে অনেকগুলো অনুরোধ পাঠানো হয়েছে (HTTP 429)। কয়েক সেকেন্ড অপেক্ষা করে 'আবার চেষ্টা করুন' চাপুন।"
+            "Too many requests were sent in a short time (HTTP 429). Wait a few seconds and tap 'Try again'."
         AiError.HIGH_DEMAND ->
-            "এই মডেলে এখন অতিরিক্ত চাপ চলছে (HTTP 503 High Demand)। একটু অপেক্ষা করে আবার চেষ্টা করুন বা Settings থেকে হালকা মডেল বেছে নিন।"
+            "This model is under heavy load right now (HTTP 503 High Demand). Wait a moment and try again, or choose a lighter model in Settings."
         AiError.TIMEOUT ->
-            "Gemini সার্ভার থেকে উত্তর আসতে বেশি সময় লাগছে (Timeout)। আপনার ইন্টারনেট দেখে আবার চেষ্টা করুন।"
+            "The Gemini server is taking too long to reply (Timeout). Check your internet and try again."
         AiError.NETWORK ->
-            "ইন্টারনেট সংযোগে সমস্যা হয়েছে। ডেটা বা Wi-Fi চালু আছে কিনা দেখে আবার চেষ্টা করুন।"
+            "There is a problem with the internet connection. Check that mobile data or Wi-Fi is on, then try again."
         AiError.MODEL_NOT_FOUND ->
-            "নির্বাচিত মডেলটি আপনার API key-তে পাওয়া যায়নি (HTTP 404)। Settings > AI Brain-এ গিয়ে 'Test Connection' চাপুন ও তালিকা থেকে মডেল বাছুন।"
+            "The selected model was not found for your API key (HTTP 404). Go to Settings > AI Brain, tap 'Test Connection', and pick a model from the list."
         AiError.SERVER ->
-            "Gemini সার্ভারে সাময়িক ত্রুটি হয়েছে (HTTP ${httpCode ?: 500})। একটু পরে আবার চেষ্টা করুন।"
+            "There was a temporary error on the Gemini server (HTTP ${httpCode ?: 500}). Try again in a moment."
         AiError.BAD_REQUEST ->
-            "অনুরোধে ত্রুটি (HTTP 400): ${message ?: "অবৈধ প্যারামিটার"}"
+            "Request error (HTTP 400): ${message ?: "Invalid parameter"}"
         AiError.BLOCKED ->
-            message ?: "নিরাপত্তা নীতিমালার কারণে উত্তর ব্লক হয়েছে বা খালি এসেছে।"
+            message ?: "The reply was blocked by the safety policy or came back empty."
         AiError.OTHER ->
-            "অপ্রত্যাশিত ত্রুটি: ${message ?: "অজানা সমস্যা"}"
+            "Unexpected error: ${message ?: "Unknown problem"}"
     }
 }
 
