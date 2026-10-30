@@ -38,7 +38,7 @@ class GatewayProvider(
     private fun apiKey(): String {
         val gwKey = keys.load(GATEWAY_KEY_NAME)?.trim().orEmpty()
         if (gwKey.isNotBlank()) return gwKey
-        throw AiException(AiError.NO_KEY, "Gateway API Key সেট করা নেই। Settings > AI Brain-এ গিয়ে আপনার sk-... টোকেন দিন।")
+        throw AiException(AiError.NO_KEY, "Gateway API key is not set. Go to Settings > AI Brain and enter your sk-... token.")
     }
 
     private fun normalizeBaseUrl(raw: String): String {
@@ -95,13 +95,13 @@ class GatewayProvider(
                             if (mId != null) list.add(mId)
                         }
                     } else if (r.code == 401 || r.code == 403) {
-                        throw AiException(AiError.INVALID_KEY, "Gateway API Key সঠিক নয় (HTTP ${r.code})", r.code)
+                        throw AiException(AiError.INVALID_KEY, "Gateway API key is incorrect (HTTP ${r.code})", r.code)
                     } else if (r.code == 404) {
-                        throw AiException(AiError.MODEL_NOT_FOUND, "Gateway-এ /v1/models পাওয়া যায়নি (HTTP 404) — Base URL / Format দেখুন", r.code)
+                        throw AiException(AiError.MODEL_NOT_FOUND, "Could not find /v1/models on the gateway (HTTP 404) — check the Base URL / Format", r.code)
                     } else if (r.code == 429) {
                         throw AiException(AiError.RATE_LIMIT, "Gateway rate limit (HTTP 429)", r.code)
                     } else {
-                        throw AiException(AiError.SERVER, "Gateway ত্রুটি (HTTP ${r.code})", r.code)
+                        throw AiException(AiError.SERVER, "Gateway error (HTTP ${r.code})", r.code)
                     }
                 }
             } catch (e: AiException) {
@@ -151,7 +151,7 @@ class GatewayProvider(
                     if (!e.isRetryable || attempt >= maxRetries) throw e
                     val waitMs = backoff[attempt.coerceAtMost(backoff.lastIndex)] + Random.nextLong(150L, 500L)
                     attempt++
-                    onStatus?.invoke("গেটওয়ে ব্যস্ত — ${"%.1f".format(waitMs / 1000.0)}s পর আবার চেষ্টা করছি ($attempt/$maxRetries)…")
+                    onStatus?.invoke("Gateway is busy — retrying in ${"%.1f".format(waitMs / 1000.0)}s (attempt $attempt/$maxRetries)...")
                     delay(waitMs)
                 }
             }
@@ -167,7 +167,7 @@ class GatewayProvider(
         if (m.isBlank()) {
             throw AiException(
                 AiError.MODEL_NOT_FOUND,
-                "মডেলের নাম খালি। Settings > AI Brain-এ Test Connection চাপুন ও তালিকা থেকে একটি মডেল বাছুন।"
+                "The model name is empty. Tap Test Connection in Settings > AI Brain and pick a model from the list."
             )
         }
         return m
@@ -207,11 +207,11 @@ class GatewayProvider(
         val resp = JSONObject(execHttp(req))
         val choices = resp.optJSONArray("choices")
         if (choices == null || choices.length() == 0) {
-            throw AiException(AiError.BLOCKED, "গেটওয়ে থেকে কোনো উত্তর পাওয়া যায়নি")
+            throw AiException(AiError.BLOCKED, "No reply received from the gateway")
         }
         val msgObj = choices.getJSONObject(0).optJSONObject("message")
         val text = msgObj?.optString("content").orEmpty().trim()
-        if (text.isBlank()) throw AiException(AiError.BLOCKED, "খালি উত্তর এসেছে")
+        if (text.isBlank()) throw AiException(AiError.BLOCKED, "Empty reply received")
 
         val u = resp.optJSONObject("usage")
         return AiReply(
@@ -267,7 +267,7 @@ class GatewayProvider(
                 }
             }
         }.trim()
-        if (text.isBlank()) throw AiException(AiError.BLOCKED, "খালি উত্তর এসেছে")
+        if (text.isBlank()) throw AiException(AiError.BLOCKED, "Empty reply received")
 
         val u = resp.optJSONObject("usage")
         return AiReply(
