@@ -17,8 +17,8 @@ object TermuxBus {
 }
 
 /**
- * Termux আলাদা অ্যাপ। এখানে শুধু Termux-এর RUN_COMMAND ইন্টেন্ট পাঠানো হয়; কোড আমাদের অ্যাপের প্রসেসে চলে না।
- * Termux-এ ~/.termux/termux.properties-এ allow-external-apps=true এবং আমাদের অ্যাপকে RUN_COMMAND অনুমতি দিতে হয়।
+ * Termux is a separate app. Only Termux's RUN_COMMAND intent is sent from here; code does not run in our app's process.
+ * In Termux, ~/.termux/termux.properties must have allow-external-apps=true, and our app must be given the RUN_COMMAND permission.
  */
 class TermuxRunner(private val ctx: Context) {
     companion object {
@@ -31,7 +31,7 @@ class TermuxRunner(private val ctx: Context) {
     fun installed(): Boolean = try { ctx.packageManager.getPackageInfo(PKG, 0); true } catch (e: Exception) { false }
     fun hasPermission(): Boolean = ContextCompat.checkSelfPermission(ctx, PERM) == PackageManager.PERMISSION_GRANTED
 
-    /** ব্যবহারকারীকে দেখানোর জন্য হুবহু যে স্ক্রিপ্ট চলবে সেটি তৈরি করে। অসমর্থিত ভাষায় null। */
+    /** Builds exactly the script that will run, for showing to the user. Null for an unsupported language. */
     fun buildScript(lang: String, code: String): String? {
         val (file, cmd) = when (lang) {
             "python" -> "main.py" to "python main.py"
@@ -50,7 +50,7 @@ class TermuxRunner(private val ctx: Context) {
             "timeout 60 sh -c '$cmd'\n"
     }
 
-    /** null = ইন্টেন্ট পাঠানো গেছে; নইলে ত্রুটির বার্তা */
+    /** null = intent was sent; otherwise an error message */
     fun run(script: String, id: String): String? {
         val i = Intent("com.termux.RUN_COMMAND").setClassName(PKG, "com.termux.app.RunCommandService")
             .putExtra("com.termux.RUN_COMMAND_PATH", BASH)
@@ -65,9 +65,9 @@ class TermuxRunner(private val ctx: Context) {
         return try {
             ctx.startService(i); null
         } catch (e: SecurityException) {
-            "অনুমতি সমস্যা: Termux-এ allow-external-apps=true দিন ও এখানে RUN_COMMAND অনুমতি দিন (${e.message})"
+            "Permission problem: set allow-external-apps=true in Termux and allow RUN_COMMAND here (${e.message})"
         } catch (e: Exception) {
-            e.message ?: "Termux সার্ভিস চালু করা যায়নি"
+            e.message ?: "Could not start the Termux service"
         }
     }
 }
