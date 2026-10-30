@@ -74,6 +74,23 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
     var showApps by remember { mutableStateOf(false) }
     var showTools by remember { mutableStateOf(false) }
 
+    // v2.1 mascot triggers. Happy fires once when an execution finishes.
+    // ExecStatus has no error flag, so a finish whose status text mentions
+    // an error/failure is NOT treated as a success (approximation, see
+    // CHANGELOG-2.1.md). Touch fires on every mascot tap, alongside the mic.
+    var happyTrigger by remember { mutableStateOf(0) }
+    var touchTrigger by remember { mutableStateOf(0) }
+    var wasExecuting by remember { mutableStateOf(false) }
+    LaunchedEffect(exec.running) {
+        if (wasExecuting && !exec.running) {
+            val t = exec.text.lowercase()
+            if (!t.contains("error") && !t.contains("fail")) {
+                happyTrigger++
+            }
+        }
+        wasExecuting = exec.running
+    }
+
     val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { g ->
         if (g) vm.startListening()
         else vm.banner.value = "Voice commands cannot run without microphone permission. Allow it from Settings > Permissions."
@@ -285,15 +302,28 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Orb(
-                    phase = ph,
-                    level = level,
-                    reduceMotion = s.reduceMotion,
+                // v2.1: 3D mascot replaces the 2D Orb here. The tap target
+                // is the surrounding Box (not the Scene surface itself), so
+                // a tap always plays the touch animation AND starts the mic,
+                // exactly as the old Orb tap did.
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(220.dp)
-                        .clickable { onMic() }
-                )
+                        .clickable {
+                            touchTrigger++
+                            onMic()
+                        }
+                ) {
+                    Mascot3D(
+                        phase = ph,
+                        level = level,
+                        happyTrigger = happyTrigger,
+                        touchTrigger = touchTrigger,
+                        reduceMotion = s.reduceMotion,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
                 Spacer(Modifier.height(18.dp))
 
