@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -322,19 +323,19 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
         SectionTitle("Quick Actions")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.weight(1f)) {
-                QuickActionItem(Icons.Default.Chat, "AI Chat", "Ask anything") { /* stays on home */ }
+                QuickActionItem(Icons.Default.Chat, "AI Chat", "Ask anything", onClick = { /* stays on home */ })
             }
             Box(Modifier.weight(1f)) {
-                QuickActionItem(Icons.Default.Build, "Automations", "Manage your tasks") { nav("settings:auto") }
+                QuickActionItem(Icons.Default.Build, "Automations", "Manage your tasks", onClick = { nav("settings:auto") })
             }
         }
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.weight(1f)) {
-                QuickActionItem(Icons.Default.Apps, "App Control", "Launch and manage") { nav("settings:apps") }
+                QuickActionItem(Icons.Default.Apps, "App Control", "Launch and manage", onClick = { nav("settings:apps") })
             }
             Box(Modifier.weight(1f)) {
-                QuickActionItem(Icons.Default.Code, "Code Studio", "Write and run code") { nav("coding") }
+                QuickActionItem(Icons.Default.Code, "Code Studio", "Write and run code", onClick = { nav("coding") })
             }
         }
         // v2.0 Recent Activity — last 3 real chat messages only, no invented counts.
