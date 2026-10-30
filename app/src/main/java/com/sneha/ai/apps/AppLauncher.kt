@@ -53,8 +53,8 @@ class AppLauncher(private val ctx: Context) {
         if (n in setOf("settings", "setting", "সেটিংস", "সেটিং")) {
             return try {
                 ctx.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                LaunchResult(true, "Settings খোলা হয়েছে", "com.android.settings")
-            } catch (e: Exception) { LaunchResult(false, "Settings খোলা যায়নি") }
+                LaunchResult(true, "Settings opened", "com.android.settings")
+            } catch (e: Exception) { LaunchResult(false, "Could not open Settings") }
         }
         val apps = launchable().sortedByDescending { it.pkg in favorites }
         val aliasPkg = aliases[n]
@@ -63,16 +63,16 @@ class AppLauncher(private val ctx: Context) {
             ?: apps.firstOrNull { it.label.contains(name.trim(), true) }
             ?: apps.firstOrNull { Translit.matches(name, it.label) }
             ?: apps.firstOrNull { it.pkg.substringAfterLast('.').contains(Translit.bnToLatin(name), true) }
-            ?: return LaunchResult(false, "'$name' অ্যাপটি ফোনে খুঁজে পাওয়া যায়নি")
+            ?: return LaunchResult(false, "'$name' app was not found on this phone")
 
-        val intent = pm.getLaunchIntentForPackage(app.pkg) ?: return LaunchResult(false, "${app.label} চালু করার ইন্টেন্ট নেই")
+        val intent = pm.getLaunchIntentForPackage(app.pkg) ?: return LaunchResult(false, "${app.label} has no launch intent")
         return try {
             ctx.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            LaunchResult(true, "${app.label} খোলা হয়েছে", app.pkg)
+            LaunchResult(true, "${app.label} opened", app.pkg)
         } catch (e: ActivityNotFoundException) {
-            LaunchResult(false, "${app.label} খোলা যায়নি")
+            LaunchResult(false, "${app.label} could not be opened")
         } catch (e: SecurityException) {
-            LaunchResult(false, "${app.label} খোলার অনুমতি নেই")
+            LaunchResult(false, "${app.label} does not have permission to open")
         }
     }
 
@@ -87,13 +87,13 @@ class AppLauncher(private val ctx: Context) {
         return try {
             if (marketIntent.resolveActivity(pm) != null) {
                 ctx.startActivity(marketIntent)
-                true to "Play Store-এ '$query' সার্চ খোলা হয়েছে"
+                true to "Opened '$query' search in Play Store"
             } else {
                 ctx.startActivity(webIntent)
-                true to "Play Store-এ '$query' খোলা হয়েছে"
+                true to "Opened '$query' in Play Store"
             }
         } catch (e: Exception) {
-            false to "Play Store খোলা যায়নি: ${e.message}"
+            false to "Could not open Play Store: ${e.message}"
         }
     }
 }
