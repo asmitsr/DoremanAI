@@ -36,7 +36,7 @@ class SpeechOutput(ctx: Context) {
                         onUtteranceDone = null
                     }
                 })
-            } else error.value = "TextToSpeech শুরু করা যায়নি"
+            } else error.value = "Text-to-speech could not be started"
         }
     }
 
@@ -50,7 +50,7 @@ class SpeechOutput(ctx: Context) {
     ): Boolean {
         val t = tts
         if (t == null || !ready) {
-            error.value = "TTS এখনও প্রস্তুত নয়"
+            error.value = "TTS is not ready yet"
             return false
         }
         val candidates = if (lang == "bn") {
@@ -67,7 +67,7 @@ class SpeechOutput(ctx: Context) {
             }
         }
         if (!langSupported) {
-            error.value = "এই ভাষার TTS ভয়েস ইনস্টল নেই। Settings > ভয়েস > TTS ইঞ্জিন সেটিংস থেকে ডাউনলোড করুন।"
+            error.value = "No TTS voice is installed for this language. Download one from Settings > Voice > TTS engine settings."
             return false
         }
         if (voiceName.isNotBlank()) {
