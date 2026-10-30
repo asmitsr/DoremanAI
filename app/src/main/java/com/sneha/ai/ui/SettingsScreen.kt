@@ -59,16 +59,16 @@ private data class SettingSection(
 )
 
 private val sections = listOf(
-    SettingSection("ai", "AI Brain & Custom Gateway", "থার্ড-পার্টি Gateway URL, sk- Token, Claude/GPT ও Gemini", Icons.Default.Psychology),
-    SettingSection("privacy", "১০০% পারমিশন সেটআপ হাব", "কল, কন্টাক্টস, SMS, মাইক ও Accessibility পারমিশন", Icons.Default.Security),
-    SettingSection("voice", "ভয়েস ও নিঃশব্দ ওয়েক-মোড", "বাংলা/ইংরেজি কণ্ঠস্বর, সাইলেন্ট লিসেনিং ও গতি", Icons.Default.RecordVoiceOver),
-    SettingSection("auto", "স্ক্রিন অটোমেশন ও সিস্টেম কন্ট্রোল", "গেম ইনস্টল, WhatsApp সেন্ড, স্ক্রিন লক ও পাওয়ার মেনু", Icons.Default.AccessibilityNew),
-    SettingSection("apps", "সব ইনস্টল করা অ্যাপ্লিকেশন", "প্রিয় অ্যাপ নির্বাচন ও দ্রুত চালু", Icons.Default.Apps),
-    SettingSection("coding", "কোডিং রানটাইম", "WebView স্যান্ডবক্স ও Termux ইন্টিগ্রেশন", Icons.Default.Code),
-    SettingSection("memory", "ব্যক্তিগত মেমরি", "সংরক্ষিত তথ্য দেখা, এডিট ও এক্সপোর্ট", Icons.Default.Memory),
-    SettingSection("look", "থিম ও ফন্ট", "ডার্ক/লাইট থিম, লেখার আকার ও অ্যানিমেশন", Icons.Default.Palette),
-    SettingSection("notif", "নোটিফিকেশন", "অটোমেশন স্ট্যাটাস ও STOP নোটিফিকেশন", Icons.Default.Notifications),
-    SettingSection("about", "অ্যাপ পরিচিতি (About Doreman)", "সংস্করণ, ফিচারের প্রকৃত অবস্থা ও তথ্য", Icons.Default.Info)
+    SettingSection("ai", "AI Brain & Custom Gateway", "Third-party gateway URL, sk- token, Claude / GPT and Gemini", Icons.Default.Psychology),
+    SettingSection("privacy", "Permission setup hub", "Call, contacts, SMS, microphone and Accessibility permissions", Icons.Default.Security),
+    SettingSection("voice", "Voice and silent wake mode", "Bengali / English voices, silent listening and speed", Icons.Default.RecordVoiceOver),
+    SettingSection("auto", "Screen automation and system control", "Game installs, WhatsApp sending, screen lock and power menu", Icons.Default.AccessibilityNew),
+    SettingSection("apps", "All installed applications", "Choose favourite apps and launch them quickly", Icons.Default.Apps),
+    SettingSection("coding", "Coding runtime", "WebView sandbox and Termux integration", Icons.Default.Code),
+    SettingSection("memory", "Personal memory", "View, edit and export saved information", Icons.Default.Memory),
+    SettingSection("look", "Theme and font", "Dark / light theme, text size and animation", Icons.Default.Palette),
+    SettingSection("notif", "Notifications", "Automation status and STOP notifications", Icons.Default.Notifications),
+    SettingSection("about", "About Doreman", "Version, real feature status and information", Icons.Default.Info)
 )
 
 @Composable
@@ -87,10 +87,10 @@ fun SettingsScreen(vm: MainViewModel, initial: String?, onBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { if (page != null) page = null else onBack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "পেছনে")
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
             Text(
-                text = sections.firstOrNull { it.key == page }?.title ?: "Doreman সেটিংস",
+                text = sections.firstOrNull { it.key == page }?.title ?: "Doreman Settings",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -102,7 +102,18 @@ fun SettingsScreen(vm: MainViewModel, initial: String?, onBack: () -> Unit) {
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                sections.forEach { sec ->
+                // v2.0: landing page grouped under 6 headings (same pages, same keys).
+                val groups = listOf(
+                    "AI & Models" to listOf("ai"),
+                    "Automation & Permissions" to listOf("auto", "privacy"),
+                    "Voice & Accessibility" to listOf("voice"),
+                    "Apps & Integrations" to listOf("apps", "coding"),
+                    "Privacy & Security" to listOf("memory", "notif"),
+                    "Appearance & About" to listOf("look", "about")
+                )
+                groups.forEach { (groupTitle, keys) ->
+                    SectionTitle(groupTitle)
+                    keys.mapNotNull { key -> sections.firstOrNull { it.key == key } }.forEach { sec ->
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
                         shape = RoundedCornerShape(16.dp),
@@ -141,6 +152,7 @@ fun SettingsScreen(vm: MainViewModel, initial: String?, onBack: () -> Unit) {
                         }
                     }
                 }
+                } // end groups.forEach
             }
             "ai" -> AiPage(vm)
             "voice" -> VoicePage(vm)
@@ -235,7 +247,7 @@ private fun openIntent(ctx: Context, i: Intent, vm: MainViewModel) {
     try {
         ctx.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (e: Exception) {
-        vm.banner.value = "সেটিংস স্ক্রিন খোলা যায়নি"
+        vm.banner.value = "Could not open the Settings screen"
     }
 }
 
@@ -253,9 +265,9 @@ fun AiPage(vm: MainViewModel) {
     var customModelInput by remember(s.model) { mutableStateOf(s.model) }
 
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        SecCard("১. কানেকশন মোড (Connection Mode)") {
+        SecCard("1. Connection Mode") {
             RadioRow(
-                label = "Custom Gateway (থার্ড-পার্টি URL + sk-... Token / Claude / GPT)",
+                label = "Custom Gateway (third-party URL + sk-... token / Claude / GPT)",
                 selected = s.providerMode == "gateway"
             ) { vm.set(K.providerMode, "gateway") }
             RadioRow(
@@ -265,8 +277,8 @@ fun AiPage(vm: MainViewModel) {
         }
 
         if (s.providerMode == "gateway") {
-            SecCard("২. Gateway Credentials (ভিডিওর মতো সেটআপ)") {
-                Note("যেকোনো থার্ড-পার্টি ওয়েবসাইটের Base URL (যেমন https://tabitoken.com) এবং আপনার মিলিয়ন/বিলিয়ন টোকেনের API Key (sk-...) দিন:")
+            SecCard("2. Gateway Credentials (video-style setup)") {
+                Note("Enter the Base URL of any third-party website (for example https://tabitoken.com) and your API key (sk-...):")
                 OutlinedTextField(
                     value = baseUrlInput,
                     onValueChange = {
@@ -275,7 +287,7 @@ fun AiPage(vm: MainViewModel) {
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text("Gateway Base URL (যেমন: https://tabitoken.com)") }
+                    label = { Text("Gateway Base URL (for example: https://tabitoken.com)") }
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
@@ -283,7 +295,7 @@ fun AiPage(vm: MainViewModel) {
                     onValueChange = { apiKeyInput = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (gwKeySet) "নতুন Gateway API Key (sk-...) দিলে আগেরটি বদলে যাবে" else "Gateway API Key (sk-...)") },
+                    label = { Text(if (gwKeySet) "If you enter a new Gateway API key (sk-...), it will replace the previous one" else "Gateway API Key (sk-...)") },
                     visualTransformation = PasswordVisualTransformation()
                 )
                 Spacer(Modifier.height(8.dp))
@@ -333,20 +345,20 @@ fun AiPage(vm: MainViewModel) {
                     Button(
                         onClick = { vm.testConnection() },
                         enabled = !testing
-                    ) { Text(if (testing) "পরীক্ষা চলছে…" else "Test Connection") }
+                    ) { Text(if (testing) "Testing..." else "Test Connection") }
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(conn, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-                Note("টিপস: Base URL, Auth Scheme (Bearer / x-api-key), Format (OpenAI / Anthropic) ও মডেলের নাম — চারটাই আপনার গেটওয়ের সাথে মিলতে হবে। 401 মানে ভুল কী, 404 মানে ভুল মডেল/URL। Test Connection এখন ভুল কীতে মডেল তালিকা দেখাবে না।")
+                Note("Tip: the Base URL, Auth Scheme (Bearer / x-api-key), Format (OpenAI / Anthropic) and model name must all match your gateway. 401 means a wrong key, 404 means a wrong model / URL. Test Connection will not show a model list for a wrong key.")
             }
         } else {
-            SecCard("২. Google Gemini API Key") {
+            SecCard("2. Google Gemini API Key") {
                 OutlinedTextField(
                     value = apiKeyInput,
                     onValueChange = { apiKeyInput = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (gemKeySet) "নতুন Gemini API key দিলে আগেরটি বদলে যাবে" else "Gemini API key দিন") },
+                    label = { Text(if (gemKeySet) "If you enter a new Gemini API key, it will replace the previous one" else "Enter your Gemini API key") },
                     visualTransformation = PasswordVisualTransformation()
                 )
                 Spacer(Modifier.height(8.dp))
@@ -354,19 +366,19 @@ fun AiPage(vm: MainViewModel) {
                     Button(
                         onClick = { vm.saveKey(apiKeyInput); apiKeyInput = "" },
                         enabled = apiKeyInput.isNotBlank()
-                    ) { Text("Key সেভ করুন") }
+                    ) { Text("Save Key") }
                     Button(
                         onClick = { vm.testConnection() },
                         enabled = gemKeySet && !testing
-                    ) { Text(if (testing) "পরীক্ষা চলছে…" else "Test Connection") }
+                    ) { Text(if (testing) "Testing..." else "Test Connection") }
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(conn, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
             }
         }
 
-        SecCard("৩. প্রিমিয়াম মডেল নির্বাচন বা যেকোনো মডেলের নাম লিখুন") {
-            Text("বর্তমান সক্রিয় মডেল: ${s.model}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+        SecCard("3. Choose a premium model or type any model name") {
+            Text("Currently active model: ${s.model}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(6.dp))
             OutlinedTextField(
                 value = customModelInput,
@@ -376,11 +388,11 @@ fun AiPage(vm: MainViewModel) {
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("যেকোনো মডেল আইডি লিখুন (যেমন: claude-opus-4-6, gpt-4o)") }
+                label = { Text("Type any model ID (for example: claude-opus-4-6, gpt-4o)") }
             )
             if (models.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                Text("তালিকা থেকে বেছে নিন:", style = MaterialTheme.typography.bodySmall)
+                Text("Choose from the list:", style = MaterialTheme.typography.bodySmall)
                 models.forEach { m ->
                     RadioRow(m, m == s.model) {
                         customModelInput = m
@@ -388,7 +400,7 @@ fun AiPage(vm: MainViewModel) {
                     }
                 }
             } else {
-                Note("'Test Connection' চাপলে আপনার টোকেনে থাকা সব প্রিমিয়াম মডেলের তালিকা স্বয়ংক্রিয়ভাবে নিচে চলে আসবে।")
+                Note("Tapping 'Test Connection' will automatically list all premium models available on your token below.")
             }
         }
     }
@@ -404,28 +416,28 @@ fun VoicePage(vm: MainViewModel) {
     val voices = remember(s.lang, tick) { a.tts.voices(s.lang) }
 
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        SecCard("ভাষা / Language") {
-            RadioRow("বাংলা (Bengali)", s.lang == "bn") { vm.set(K.lang, "bn") }
+        SecCard("Language") {
+            RadioRow("Bengali", s.lang == "bn") { vm.set(K.lang, "bn") }
             RadioRow("English", s.lang == "en") { vm.set(K.lang, "en") }
-            Note("ভাষা বদলালে ভয়েস শোনা (bn-BD / en-US), কথা বলা (TTS) ও AI-এর উত্তরের ভাষা বদলে যাবে।")
+            Note("Changing the language changes voice recognition (bn-BD / en-US), speech (TTS) and the language of the AI's replies.")
         }
-        SecCard("নিঃশব্দ ওয়েক-মোড (No Beep Sound)") {
-            SwitchRow("Doreman-এর উত্তর জোরে পড়ে শোনাও", s.autoSpeak) { vm.set(K.autoSpeak, it) }
-            SwitchRow("নিঃশব্দে শুধু 'Doreman' ডাকের অপেক্ষায় থাকবে", handsFree) { vm.toggleHandsFree(it) }
-            Note("মাইক্রোফোন চালু বা বন্ধ হওয়ার সময় কোনো 'টং/বিপ' সাউন্ড করবে না এবং অ্যাপ থেকে বের হয়ে গেলে সম্পূর্ণ নীরব থাকবে।")
-            PrefSlider("কথার গতি", s.speechRate, 0.5f..2f, { "%.1fx".format(it) }) { vm.set(K.rate, it) }
-            PrefSlider("ভলিউম", s.volume, 0f..1f, { "${(it * 100).toInt()}%" }) { vm.set(K.volume, it) }
+        SecCard("Silent wake mode (no beep sound)") {
+            SwitchRow("Read Doreman's replies aloud", s.autoSpeak) { vm.set(K.autoSpeak, it) }
+            SwitchRow("Silently wait only for the 'Doreman' call", handsFree) { vm.toggleHandsFree(it) }
+            Note("No 'ding / beep' sound will play when the microphone turns on or off, and the app will stay fully silent after you leave it.")
+            PrefSlider("Speech speed", s.speechRate, 0.5f..2f, { "%.1fx".format(it) }) { vm.set(K.rate, it) }
+            PrefSlider("Volume", s.volume, 0f..1f, { "${(it * 100).toInt()}%" }) { vm.set(K.volume, it) }
         }
 
-        SecCard("কণ্ঠস্বর নির্বাচন") {
-            RadioRow("সিস্টেম ডিফল্ট", s.voiceName.isBlank()) { vm.set(K.voice, "") }
+        SecCard("Choose a voice") {
+            RadioRow("System default", s.voiceName.isBlank()) { vm.set(K.voice, "") }
             voices.forEach { RadioRow(it, s.voiceName == it) { vm.set(K.voice, it) } }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = {
-                    vm.speak(if (s.lang == "bn") "হ্যালো, আমি ডোরেমন। বলুন আপনার জন্য কী করতে পারি?" else "Hello, I am Doreman. How can I help you?")
-                }) { Text("ভয়েস টেস্ট") }
-                OutlinedButton(onClick = { tick++ }) { Text("তালিকা রিফ্রেশ") }
+                    vm.speak("Hello, I am Doreman. How can I help you?") // v2.0: voice test is English
+                }) { Text("Voice test") }
+                OutlinedButton(onClick = { tick++ }) { Text("Refresh list") }
             }
         }
     }
@@ -436,15 +448,15 @@ fun AutoPage(vm: MainViewModel) {
     val ctx = LocalContext.current
     val on by SnehaAccessibilityService.connected.collectAsStateWithLifecycle()
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        SecCard("Accessibility সার্ভিস অবস্থা") {
+        SecCard("Accessibility service status") {
             Text(
-                if (on) "✓ Accessibility সার্ভিস চালু আছে" else "✗ Accessibility সার্ভিস বন্ধ আছে",
+                if (on) "✓ Accessibility service is on" else "✗ Accessibility service is off",
                 style = MaterialTheme.typography.titleMedium,
                 color = if (on) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
             )
             Spacer(Modifier.height(8.dp))
             Button(onClick = { openIntent(ctx, Intent(AndroidSettings.ACTION_ACCESSIBILITY_SETTINGS), vm) }) {
-                Text("Android Accessibility সেটিংস খুলুন")
+                Text("Open Android Accessibility Settings")
             }
         }
     }
@@ -459,7 +471,7 @@ fun AppsPage(vm: MainViewModel) {
         value = withContext(Dispatchers.Default) { a.launcher.launchable() }
     }
     Column {
-        OutlinedTextField(q, { q = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("ইনস্টল করা অ্যাপ খুঁজুন") })
+        OutlinedTextField(q, { q = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Search installed apps") })
         LazyColumn(Modifier.weight(1f)) {
             items(apps.filter { it.label.contains(q, true) }, key = { it.pkg }) { ap ->
                 Row(
@@ -469,7 +481,7 @@ fun AppsPage(vm: MainViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(ap.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                    TextButton(onClick = { vm.openApp(ap.label) }) { Text("খোলো") }
+                    TextButton(onClick = { vm.openApp(ap.label) }) { Text("Open") }
                     Checkbox(
                         checked = ap.pkg in s.favorites,
                         onCheckedChange = { c -> vm.set(K.favorites, if (c) s.favorites + ap.pkg else s.favorites - ap.pkg) }
@@ -490,13 +502,13 @@ fun CodingSettingsPage(vm: MainViewModel) {
     val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        SecCard("Termux কোড রানটাইম") {
-            SwitchRow("Termux দিয়ে কোড চালানো চালু", s.termuxEnabled) { vm.set(K.termux, it) }
-            Text("Termux অ্যাপ: " + if (installed) "✓ ইনস্টল আছে" else "✗ ইনস্টল নেই")
-            Text("RUN_COMMAND অনুমতি: " + if (perm) "✓ দেওয়া আছে" else "✗ দেওয়া হয়নি")
+        SecCard("Termux code runtime") {
+            SwitchRow("Run code with Termux", s.termuxEnabled) { vm.set(K.termux, it) }
+            Text("Termux app: " + if (installed) "✓ Installed" else "✗ Not installed")
+            Text("RUN_COMMAND permission: " + if (perm) "✓ Granted" else "✗ Not granted")
             Spacer(Modifier.height(6.dp))
             Button(onClick = { permLauncher.launch(TermuxRunner.PERM) }, enabled = installed && !perm) {
-                Text("RUN_COMMAND অনুমতি দিন")
+                Text("Allow RUN_COMMAND permission")
             }
         }
     }
@@ -510,13 +522,13 @@ fun MemoryPage(vm: MainViewModel) {
     var newText by remember { mutableStateOf("") }
 
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        SecCard("মেমরি নিয়ন্ত্রণ") {
-            SwitchRow("Doreman-এর মেমরি চালু রাখুন", s.memoryEnabled) { vm.set(K.memory, it) }
+        SecCard("Memory control") {
+            SwitchRow("Keep Doreman's memory on", s.memoryEnabled) { vm.set(K.memory, it) }
             OutlinedTextField(
                 value = newText,
                 onValueChange = { newText = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("নতুন তথ্য যোগ করুন") }
+                label = { Text("Add new information") }
             )
             Spacer(Modifier.height(6.dp))
             Button(
@@ -524,14 +536,14 @@ fun MemoryPage(vm: MainViewModel) {
                     if (a.memory.add(newText) == null) newText = ""
                 },
                 enabled = newText.isNotBlank()
-            ) { Text("যোগ করুন") }
+            ) { Text("Add") }
         }
 
-        SecCard("সংরক্ষিত তথ্য (${items.size})") {
+        SecCard("Saved information (${items.size})") {
             items.forEach { e ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(e.text, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                    TextButton(onClick = { a.memory.delete(e.id) }) { Text("মুছুন") }
+                    TextButton(onClick = { a.memory.delete(e.id) }) { Text("Delete") }
                 }
             }
         }
@@ -554,10 +566,10 @@ fun PrivacyPage(vm: MainViewModel) {
         permTick++
     }
 
-    fun yn(b: Boolean) = if (b) "✓ চালু আছে" else "✗ দেওয়া হয়নি"
+    fun yn(b: Boolean) = if (b) "✓ On" else "✗ Not granted"
 
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        SecCard("১-ক্লিকে সব পারমিশন চালু করুন") {
+        SecCard("Turn on all permissions in 1 click") {
             Button(
                 onClick = {
                     val list = mutableListOf(
@@ -571,23 +583,23 @@ fun PrivacyPage(vm: MainViewModel) {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("১০০% পারমিশন দিন (মাইক, কল, কন্টাক্টস, SMS)")
+                Text("Allow all permissions (microphone, call, contacts, SMS)")
             }
         }
 
-        SecCard("পারমিশন স্ট্যাটাস") {
-            Text("🎙️ মাইক্রোফোন: ${yn(mic)}")
-            Text("👥 কন্টাক্টস (Baba/বাবা খোঁজা): ${yn(contacts)}")
-            Text("📞 সরাসরি ফোন কল: ${yn(phone)}")
-            Text("💬 সরাসরি SMS: ${yn(sms)}")
-            Text("🔔 নোটিফিকেশন: ${yn(notif)}")
-            Text("👆 Accessibility (গেম ইনস্টল ও WhatsApp সেন্ড): ${yn(a11y)}")
+        SecCard("Permission status") {
+            Text("🎙️ Microphone: ${yn(mic)}")
+            Text("👥 Contacts (searching for Baba): ${yn(contacts)}")
+            Text("📞 Direct phone call: ${yn(phone)}")
+            Text("💬 Direct SMS: ${yn(sms)}")
+            Text("🔔 Notifications: ${yn(notif)}")
+            Text("👆 Accessibility (game installs and WhatsApp sending): ${yn(a11y)}")
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = {
                     openIntent(ctx, Intent(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")), vm)
-                }) { Text("অ্যাপ পারমিশন") }
-                OutlinedButton(onClick = { openIntent(ctx, Intent(AndroidSettings.ACTION_ACCESSIBILITY_SETTINGS), vm) }) { Text("Accessibility চালু করুন") }
+                }) { Text("App permissions") }
+                OutlinedButton(onClick = { openIntent(ctx, Intent(AndroidSettings.ACTION_ACCESSIBILITY_SETTINGS), vm) }) { Text("Turn on Accessibility") }
             }
         }
     }
@@ -597,11 +609,11 @@ fun PrivacyPage(vm: MainViewModel) {
 fun LookPage(vm: MainViewModel) {
     val s by vm.settings.collectAsStateWithLifecycle()
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        SecCard("থিম নির্বাচন") {
-            RadioRow("ডার্ক (Deep Cosmic Dark)", s.theme == "dark") { vm.set(K.theme, "dark") }
-            RadioRow("লাইট (Clean Daylight)", s.theme == "light") { vm.set(K.theme, "light") }
-            RadioRow("সিস্টেম ডিফল্ট", s.theme == "system") { vm.set(K.theme, "system") }
-            RadioRow("মিডনাইট ইন্ডিগো (Midnight Indigo #282B4A + Vanilla #EEEBDA)", s.theme == "midnight") { vm.set(K.theme, "midnight") }
+        SecCard("Choose a theme") {
+            RadioRow("Dark (Deep Cosmic Dark)", s.theme == "dark") { vm.set(K.theme, "dark") }
+            RadioRow("Light (Clean Daylight)", s.theme == "light") { vm.set(K.theme, "light") }
+            RadioRow("System default", s.theme == "system") { vm.set(K.theme, "system") }
+            RadioRow("Midnight Indigo (Midnight Indigo #282B4A + Vanilla #EEEBDA)", s.theme == "midnight") { vm.set(K.theme, "midnight") }
         }
     }
 }
@@ -610,8 +622,8 @@ fun LookPage(vm: MainViewModel) {
 fun NotifPage(vm: MainViewModel) {
     val s by vm.settings.collectAsStateWithLifecycle()
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        SecCard("অটোমেশন নোটিফিকেশন") {
-            SwitchRow("অটোমেশন চলাকালীন STOP নোটিফিকেশন দেখাও", s.notifyAutomation) { vm.set(K.notify, it) }
+        SecCard("Automation notifications") {
+            SwitchRow("Show a STOP notification while automation is running", s.notifyAutomation) { vm.set(K.notify, it) }
         }
     }
 }
@@ -619,8 +631,8 @@ fun NotifPage(vm: MainViewModel) {
 @Composable
 fun AboutPage() {
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        SecCard("Doreman AI — v1.2.0") {
-            Text("কাস্টম গেটওয়ে (Claude/OpenAI/Gemini) ও সাইলেন্ট ওয়েক ভয়েস অ্যাসিস্ট্যান্ট")
+        SecCard("Doreman AI — v2.0.0") {
+            Text("Custom gateway (Claude / OpenAI / Gemini) and silent-wake voice assistant")
         }
     }
 }
