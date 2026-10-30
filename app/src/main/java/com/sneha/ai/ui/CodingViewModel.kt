@@ -39,10 +39,10 @@ class CodingViewModel(app: Application) : AndroidViewModel(app) {
     fun ask(task: String) {
         val p = prompt.value.trim()
         if (task == "write" && p.isEmpty()) return
-        if (task != "write" && code.value.isBlank()) { note.value = "আগে এডিটরে কোড দিন বা তৈরি করুন"; return }
+        if (task != "write" && code.value.isBlank()) { note.value = "First add code in the editor or generate it"; return }
         viewModelScope.launch {
             busy.value = true
-            note.value = "কোড তৈরি হচ্ছে…"
+            note.value = "Generating code..."
             val s = a.prefs.current()
             val l = lang.value
             val user = when (task) {
@@ -74,7 +74,7 @@ class CodingViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }.onFailure { e ->
                 if (e is CancellationException) throw e
-                note.value = (e as? AiException)?.userMessage() ?: "ত্রুটি: ${e.message}"
+                note.value = (e as? AiException)?.userMessage() ?: "Error: ${e.message}"
             }
             busy.value = false
         }
@@ -83,7 +83,7 @@ class CodingViewModel(app: Application) : AndroidViewModel(app) {
     fun requestRun() {
         val l = lang.value
         val c = code.value
-        if (c.isBlank()) { log.value = "কোড খালি"; return }
+        if (c.isBlank()) { log.value = "Code is empty"; return }
         when (l) {
             "html" -> preview.value = c
             "css" -> preview.value = "<!doctype html><meta charset=utf-8><style>$c</style><body><h1>Heading</h1><p>Paragraph <a href=\"#\">link</a></p><button>Button</button></body>"
@@ -91,11 +91,11 @@ class CodingViewModel(app: Application) : AndroidViewModel(app) {
             else -> viewModelScope.launch {
                 val s = a.prefs.current()
                 val t = a.termux
-                if (!s.termuxEnabled) { log.value = "Termux রান বন্ধ। Settings > কোডিং থেকে চালু করুন। কোড শুধু তৈরি হয়েছে, চালানো হয়নি।"; return@launch }
-                if (!t.installed()) { log.value = "Termux ইনস্টল নেই। কোড চালানো হয়নি।"; return@launch }
+                if (!s.termuxEnabled) { log.value = "Termux run is off. Turn it on in Settings > Coding. The code was only generated, not run."; return@launch }
+                if (!t.installed()) { log.value = "Termux is not installed. The code was not run."; return@launch }
                 if (!t.hasPermission()) { needPerm.value = true; return@launch }
                 val sc = t.buildScript(l, c)
-                if (sc == null) { log.value = "'$l' চালানোর ব্যাকএন্ড নেই (Not implemented)। কোড শুধু তৈরি হয়েছে, চালানো হয়নি।"; return@launch }
+                if (sc == null) { log.value = "'$l' has no run backend (Not implemented). The code was only generated, not run."; return@launch }
                 pendingScript.value = sc
             }
         }
@@ -105,29 +105,29 @@ class CodingViewModel(app: Application) : AndroidViewModel(app) {
         val sc = pendingScript.value ?: return
         pendingScript.value = null
         val id = UUID.randomUUID().toString()
-        log.value = "Termux-এ পাঠানো হচ্ছে…"
+        log.value = "Sending to Termux..."
         running.value = true
         runJob = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             val r = withTimeoutOrNull(90_000) { TermuxBus.results.first { it.id == id } }
             running.value = false
-            log.value = if (r == null) "Termux থেকে ফলাফল আসেনি (টাইমআউট/বাতিল)।"
+            log.value = if (r == null) "No result came back from Termux (timeout / cancelled)."
             else "exit=${r.exit ?: "?"}\n--- stdout ---\n${r.stdout}\n--- stderr ---\n${r.stderr}" + (r.err?.let { "\n--- error ---\n$it" } ?: "")
         }
         val err = a.termux.run(sc, id)
-        if (err != null) { runJob?.cancel(); running.value = false; log.value = "ত্রুটি: $err" }
+        if (err != null) { runJob?.cancel(); running.value = false; log.value = "Error: $err" }
     }
 
     fun cancelRun() {
         runJob?.cancel()
         running.value = false
-        log.value += "\nঅপেক্ষা বন্ধ করা হয়েছে। Termux-এ প্রসেস থাকলে সেটি ৬০ সেকেন্ডের timeout-এ নিজে থামবে।"
+        log.value += "\nWait cancelled. If a process remains in Termux, it will stop itself at the 60-second timeout."
     }
 
     fun save(project: String) {
         if (code.value.isBlank()) return
         val f = a.projects.save(project, fileName(), code.value)
         saved.value = a.projects.list()
-        log.value = "সংরক্ষিত: ${f.absolutePath}"
+        log.value = "Saved: ${f.absolutePath}"
     }
 
     private fun jsWrap(c: String): String = """<!doctype html><meta charset="utf-8"><body style="font-family:monospace;background:#111;color:#eee"><pre id="o"></pre><script>
