@@ -18,7 +18,7 @@ object YouTubeHandoff {
         if (ytmPlay.resolveActivity(pm) != null) {
             try {
                 ctx.startActivity(ytmPlay)
-                return true to "YouTube Music-এ '$query' চালানোর অনুরোধ পাঠানো হয়েছে"
+                return true to "A request to play '$query' was sent to YouTube Music"
             } catch (_: Exception) {}
         }
 
@@ -30,13 +30,13 @@ object YouTubeHandoff {
         return try {
             if (yt.resolveActivity(pm) != null) {
                 ctx.startActivity(yt)
-                true to "YouTube অ্যাপে '$query' খোলা হয়েছে"
+                true to "Opened '$query' in the YouTube app"
             } else {
                 ctx.startActivity(web)
-                true to "ব্রাউজারে YouTube সার্চ খোলা হয়েছে"
+                true to "YouTube search opened in the browser"
             }
         } catch (e: Exception) {
-            false to "YouTube খোলা যায়নি: ${e.message}"
+            false to "Could not open YouTube: ${e.message}"
         }
     }
 }
