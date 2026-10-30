@@ -22,7 +22,7 @@ import kotlin.coroutines.resume
  *
  * On every window change it snapshots the foreground package + the
  * visible, non-password labels (max 60) into [lastScreen]. The LLM's
- * "ui_read" / "স্ক্রিনে কী আছে" action can therefore answer from the
+ * "ui_read" / "What is on the screen?" action can therefore answer from the
  * snapshot even when rootInActiveWindow is momentarily unavailable, and
  * ActionExecutor can check which app is actually in front before acting.
  * No screenshot is taken, no password field is ever read, and no action
@@ -234,7 +234,7 @@ class SnehaAccessibilityService : AccessibilityService() {
     }
 
     fun typeText(text: String): String? {
-        val root = rootInActiveWindow ?: return "স্ক্রিন তথ্য পাওয়া যায়নি"
+        val root = rootInActiveWindow ?: return "Screen information not found"
         var node: AccessibilityNodeInfo? = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)?.takeIf { it.isEditable }
         if (node == null) {
             var cand: AccessibilityNodeInfo? = null
@@ -242,10 +242,10 @@ class SnehaAccessibilityService : AccessibilityService() {
             node = cand
             node?.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
         }
-        val target = node ?: return "লেখার মতো টেক্সট ফিল্ড পাওয়া যায়নি"
-        if (target.isPassword) return "পাসওয়ার্ড ফিল্ডে লেখা নিষিদ্ধ"
+        val target = node ?: return "No text field found to type into"
+        if (target.isPassword) return "Typing into password fields is not allowed"
         val args = Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text) }
-        if (!target.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)) return "টেক্সট বসানো যায়নি"
+        if (!target.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)) return "Could not enter the text"
         target.refresh()
         return null
     }
