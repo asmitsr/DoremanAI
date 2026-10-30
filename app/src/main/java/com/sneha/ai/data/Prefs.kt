@@ -21,7 +21,7 @@ data class Settings(
     val useTemperature: Boolean = false,
     val temperature: Float = 0.7f,
     val maxTokens: Int = 2048,
-    val lang: String = "bn",
+    val lang: String = "en", // v2.0: English is the default language
     val speechRate: Float = 1.0f,
     val volume: Float = 1.0f,
     val voiceName: String = "",
