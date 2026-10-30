@@ -63,7 +63,7 @@ class ActionExecutor(private val app: SnehaApp) {
                     if (!r.ok) { ok = false; break }
                 }
             } catch (e: CancellationException) {
-                log += "■ থামানো হয়েছে"; ok = false
+                log += "■ Stopped"; ok = false
             } finally {
                 status.value = ExecStatus()
                 Notifier.cancel(app)
@@ -102,18 +102,18 @@ class ActionExecutor(private val app: SnehaApp) {
                     }
                     is Action.PlayStoreInstall -> {
                         val r = app.launcher.openPlayStoreSearch(a.query)
-                        R(r.first, r.second + " (স্বয়ংক্রিয় Install চাপার জন্য Accessibility চালু করুন)")
+                        R(r.first, r.second + " (turn on Accessibility to auto-tap Install)")
                     }
                     is Action.WhatsAppMsg -> {
                         val r = app.comms.openWhatsApp(a.target, a.message)
                         R(r.first, r.second)
                     }
-                    else -> R(false, "Accessibility সার্ভিস চালু নেই (Settings > স্ক্রিন অটোমেশন থেকে চালু করুন)")
+                    else -> R(false, "Accessibility service is not on (turn it on in Settings > Screen Automation)")
                 }
             }
             val pkg = svc.foregroundPackage()
             if (a !is Action.LockScreen && a !is Action.PowerMenu && a !is Action.Back && a !is Action.Home && Guard.isBlocked(pkg)) {
-                return R(false, "নিরাপত্তার কারণে এই অ্যাপে ($pkg) অটোমেশন বন্ধ")
+                return R(false, "Automation is blocked in this app for safety ($pkg)")
             }
             return withContext(Dispatchers.Default) { uiStep(a, svc) }
         }
@@ -135,15 +135,15 @@ class ActionExecutor(private val app: SnehaApp) {
             is Action.Volume -> adjustVolume(a.dir)
             is Action.SystemSetting -> openSystemSetting(a.panel)
             Action.CleanPhone -> cleanPhone()
-            is Action.Wait -> { delay(a.ms); R(true, "ঠিক আছে") }
+            is Action.Wait -> { delay(a.ms); R(true, "OK") }
             is Action.Remember -> {
-                if (!app.prefs.current().memoryEnabled) R(false, "মেমরি বন্ধ আছে")
+                if (!app.prefs.current().memoryEnabled) R(false, "Memory is off")
                 else {
                     val e = app.memory.add(a.text)
-                    if (e == null) R(true, "মেমরিতে সংরক্ষিত") else R(false, e)
+                    if (e == null) R(true, "Saved to memory") else R(false, e)
                 }
             }
-            else -> R(false, "অসমর্থিত অ্যাকশন")
+            else -> R(false, "Unsupported action")
         }
     }
 
@@ -151,23 +151,23 @@ class ActionExecutor(private val app: SnehaApp) {
         is Action.TapText -> changed(s) { s.tapByText(a.text) }
         is Action.TapXY -> changed(s) { s.tapXY(a.x, a.y) }
         is Action.Scroll -> changed(s) { s.scroll(a.down) }
-        Action.Back -> { val ok = s.back(); R(ok, if (ok) "Back পাঠানো হয়েছে" else "Back ব্যর্থ") }
-        Action.Home -> { val ok = s.home(); R(ok, if (ok) "Home পাঠানো হয়েছে" else "Home ব্যর্থ") }
+        Action.Back -> { val ok = s.back(); R(ok, if (ok) "Back sent" else "Back failed") }
+        Action.Home -> { val ok = s.home(); R(ok, if (ok) "Home sent" else "Home failed") }
         Action.LockScreen -> {
             val ok = s.lockScreen()
-            R(ok, if (ok) "ফোনের স্ক্রিন লক করা হয়েছে" else "স্ক্রিন লক করা যায়নি")
+            R(ok, if (ok) "Phone screen locked" else "Could not lock the screen")
         }
         Action.PowerMenu -> {
             val ok = s.openPowerDialog()
-            R(ok, if (ok) "পাওয়ার মেনু খোলা হয়েছে" else "পাওয়ার মেনু খোলা যায়নি")
+            R(ok, if (ok) "Power menu opened" else "Could not open the power menu")
         }
-        is Action.TypeText -> { val e = s.typeText(a.text); if (e == null) R(true, "লেখা বসেছে") else R(false, e) }
-        Action.Enter -> { val ok = s.pressEnter(); R(ok, if (ok) "Enter পাঠানো হয়েছে" else "Enter সম্ভব হয়নি") }
-        Action.ReadScreen -> { val l = s.readScreen().ifEmpty { SnehaAccessibilityService.lastScreen.value.texts }; R(true, if (l.isEmpty()) "কোনো লেবেল পাওয়া যায়নি" else "\n" + l.joinToString("\n")) }
+        is Action.TypeText -> { val e = s.typeText(a.text); if (e == null) R(true, "Text entered") else R(false, e) }
+        Action.Enter -> { val ok = s.pressEnter(); R(ok, if (ok) "Enter sent" else "Enter could not be sent") }
+        Action.ReadScreen -> { val l = s.readScreen().ifEmpty { SnehaAccessibilityService.lastScreen.value.texts }; R(true, if (l.isEmpty()) "No labels found" else "\n" + l.joinToString("\n")) }
         is Action.YouTubeSearch -> playFirst(a, s)
         is Action.PlayStoreInstall -> installFromPlayStore(a.query, s)
         is Action.WhatsAppMsg -> autoSendWhatsApp(a.target, a.message, s)
-        else -> R(false, "অসমর্থিত অ্যাকশন")
+        else -> R(false, "Unsupported action")
     }
 
     private suspend fun installFromPlayStore(query: String, s: SnehaAccessibilityService): R {
@@ -188,9 +188,9 @@ class ActionExecutor(private val app: SnehaApp) {
             }
         }
         return if (installed) {
-            R(true, "Play Store-এ '$query' খুঁজে Install বাটনে ট্যাপ করা হয়েছে!")
+            R(true, "'$query' was searched in Play Store and the Install button was tapped!")
         } else {
-            R(true, "Play Store-এ '$query' খোলা হয়েছে")
+            R(true, "Opened '$query' in Play Store")
         }
     }
 
@@ -202,11 +202,11 @@ class ActionExecutor(private val app: SnehaApp) {
             delay(2500)
             repeat(4) {
                 if (s.tapWhatsAppSend()) {
-                    return R(true, "WhatsApp-এ $target-কে মেসেজ পাঠানো হয়েছে!")
+                    return R(true, "On WhatsApp, $target was sent a message!")
                 }
                 delay(1000)
             }
-            return R(true, "WhatsApp-এ $target-এর চ্যাট খোলা হয়েছে")
+            return R(true, "On WhatsApp, $target's chat opened")
         } else {
             delay(2600)
             var chatOpened = s.tapByText(target)
@@ -222,10 +222,10 @@ class ActionExecutor(private val app: SnehaApp) {
                 s.typeText(message)
                 delay(800)
                 if (s.tapWhatsAppSend()) {
-                    return R(true, "WhatsApp-এ '$target' খুঁজে মেসেজ পাঠানো হয়েছে!")
+                    return R(true, "On WhatsApp, '$target' was found and the message was sent!")
                 }
             }
-            return R(true, "WhatsApp খোলা হয়েছে")
+            return R(true, "WhatsApp opened")
         }
     }
 
@@ -245,24 +245,24 @@ class ActionExecutor(private val app: SnehaApp) {
                     SnehaAccessibilityService.instance?.let { svc ->
                         svc.tapByText("Clean") || svc.tapByText("Boost") || svc.tapByText("Junk")
                     }
-                    return@withContext R(true, "ক্যাশ পরিষ্কার করা হয়েছে এবং Phone Master ক্লিনার চালু করা হয়েছে!")
+                    return@withContext R(true, "Cache cleared and Phone Master cleaner launched!")
                 }
 
                 val freeMb = miBefore.availMem / (1024 * 1024)
-                R(true, "ফোন অপ্টিমাইজ ও ক্যাশ ক্লিন সম্পন্ন হয়েছে (ফ্রি RAM: ${freeMb}MB)")
+                R(true, "Phone optimisation and cache cleaning done (free RAM: ${freeMb}MB)")
             } catch (e: Exception) {
-                R(false, "ক্লিন করা যায়নি: ${e.message}")
+                R(false, "Could not clean: ${e.message}")
             }
         }
     }
 
     private suspend fun changed(s: SnehaAccessibilityService, act: suspend () -> Boolean): R {
         val before = s.readScreen().hashCode()
-        if (!act()) return R(false, "এলিমেন্ট পাওয়া যায়নি")
+        if (!act()) return R(false, "Element not found")
         delay(800)
         val after = s.readScreen().hashCode()
-        return if (before != after) R(true, "সম্পন্ন")
-        else R(true, "ট্যাপ পাঠানো হয়েছে")
+        return if (before != after) R(true, "Done")
+        else R(true, "Tap sent")
     }
 
     private suspend fun playFirst(a: Action.YouTubeSearch, s: SnehaAccessibilityService): R {
@@ -271,7 +271,7 @@ class ActionExecutor(private val app: SnehaApp) {
         if (!h.first) return R(false, h.second)
         delay(3800)
         if (audio.isMusicActive && !wasPlaying) {
-            return R(true, "প্লেব্যাক শুরু হয়েছে")
+            return R(true, "Playback started")
         }
         var clicked = false
         repeat(3) {
@@ -280,14 +280,14 @@ class ActionExecutor(private val app: SnehaApp) {
                 if (!clicked) delay(1400)
             }
         }
-        if (!clicked) return R(false, "YouTube খোলা হয়েছে কিন্তু ভিডিওতে ক্লিক করা যায়নি")
+        if (!clicked) return R(false, "YouTube opened but the video could not be tapped")
         repeat(14) {
             delay(500)
             if (audio.isMusicActive) {
-                return R(true, "গান চালু হয়েছে")
+                return R(true, "Music started")
             }
         }
-        return R(true, "ভিডিও চালু করা হয়েছে")
+        return R(true, "Video started")
     }
 
     private fun stayAwake(on: Boolean): R {
@@ -299,13 +299,13 @@ class ActionExecutor(private val app: SnehaApp) {
         return try {
             if (on) {
                 DoremanVoiceService.start(app)
-                R(true, "সারাক্ষণ চালু আছে — অন্য অ্যাপে গেলেও ফ্লোটিং Doreman বোতামে ট্যাপ করলেই শুনবে (Overlay অনুমতি না থাকলে নোটিফিকেশনে ট্যাপ করুন)")
+                R(true, "Stay awake is on — even in another app, tap the floating Doreman button to be heard (if overlay permission is missing, tap the notification)")
             } else {
                 DoremanVoiceService.stop(app)
-                R(true, "সারাক্ষণ চালু বন্ধ করা হয়েছে")
+                R(true, "Stay awake turned off")
             }
         } catch (e: Exception) {
-            R(false, "সারাক্ষণ চালু করা যায়নি: " + e.message)
+            R(false, "Could not turn on stay awake: " + e.message)
         }
     }
 
@@ -320,23 +320,23 @@ class ActionExecutor(private val app: SnehaApp) {
             when (dir) {
                 "up" -> {
                     am.adjustSuggestedStreamVolume(AudioManager.ADJUST_RAISE, AudioManager.STREAM_MUSIC, AudioManager.FLAG_SHOW_UI)
-                    R(true, "ভলিউম বাড়ানো হয়েছে")
+                    R(true, "Volume increased")
                 }
                 "down" -> {
                     am.adjustSuggestedStreamVolume(AudioManager.ADJUST_LOWER, AudioManager.STREAM_MUSIC, AudioManager.FLAG_SHOW_UI)
-                    R(true, "ভলিউম কমানো হয়েছে")
+                    R(true, "Volume decreased")
                 }
                 "mute" -> {
                     am.adjustSuggestedStreamVolume(AudioManager.ADJUST_MUTE, AudioManager.STREAM_MUSIC, AudioManager.FLAG_SHOW_UI)
-                    R(true, "অডিও মিউট করা হয়েছে")
+                    R(true, "Audio muted")
                 }
                 else -> {
                     am.adjustSuggestedStreamVolume(AudioManager.ADJUST_UNMUTE, AudioManager.STREAM_MUSIC, AudioManager.FLAG_SHOW_UI)
-                    R(true, "অডিও আনমিউট করা হয়েছে")
+                    R(true, "Audio unmuted")
                 }
             }
         } catch (e: Exception) {
-            R(false, "ভলিউম পরিবর্তন করা যায়নি")
+            R(false, "Could not change volume")
         }
     }
 
@@ -352,9 +352,9 @@ class ActionExecutor(private val app: SnehaApp) {
         }
         return try {
             app.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            R(true, "$panel সেটিংস খোলা হয়েছে")
+            R(true, "$panel settings opened")
         } catch (e: Exception) {
-            R(false, "সেটিংস খোলা যায়নি")
+            R(false, "Could not open settings")
         }
     }
 
@@ -369,7 +369,7 @@ class ActionExecutor(private val app: SnehaApp) {
         am.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code))
         am.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code))
         delay(800)
-        return R(true, "মিডিয়া কমান্ড পাঠানো হয়েছে")
+        return R(true, "Media command sent")
     }
 }
 
@@ -391,7 +391,7 @@ object Notifier {
         )
         val n = NotificationCompat.Builder(ctx, CH)
             .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentTitle("Doreman কাজ করছে")
+            .setContentTitle("Doreman is working")
             .setContentText(text)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
