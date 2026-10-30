@@ -42,7 +42,7 @@ class SpeechInput(private val ctx: Context) {
     ) {
         release()
         if (!available()) {
-            onError("এই ফোনে স্পিচ রিকগনিশন সার্ভিস নেই")
+            onError("This phone has no speech recognition service")
             return
         }
         muteBeepSound()
@@ -80,10 +80,10 @@ class SpeechInput(private val ctx: Context) {
                 }
                 onError(
                     when (code) {
-                        SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "কিছু শুনতে পাইনি"
-                        SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "নেটওয়ার্ক সমস্যা"
-                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "মাইক্রোফোন অনুমতি নেই"
-                        else -> "ত্রুটি ($code)"
+                        SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "I could not hear anything"
+                        SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network problem"
+                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission is missing"
+                        else -> "Error ($code)"
                     }
                 )
             }
@@ -92,7 +92,7 @@ class SpeechInput(private val ctx: Context) {
                 release()
                 unmuteBeepSound()
                 delivered = true
-                if (t.isBlank() && lastPartial.isBlank()) onError("কিছু শুনতে পাইনি")
+                if (t.isBlank() && lastPartial.isBlank()) onError("I could not hear anything")
                 else onFinal(if (t.isNotBlank()) t else lastPartial)
             }
             override fun onPartialResults(b: Bundle?) {
