@@ -436,7 +436,7 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
             }
         }
 
-        } // end of scrollable dashboard column
+        }
 
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
