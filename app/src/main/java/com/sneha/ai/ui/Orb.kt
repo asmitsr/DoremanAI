@@ -196,7 +196,6 @@ fun Orb(phase: Phase, level: Float, reduceMotion: Boolean, modifier: Modifier = 
             drawCircle(color = scheme.onBackground.copy(alpha = 0.9f), radius = r * 0.05f, center = Offset(ex, earY - r * 0.18f))
         }
 
-        // Core robot head.
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
@@ -219,7 +218,6 @@ fun Orb(phase: Phase, level: Float, reduceMotion: Boolean, modifier: Modifier = 
             center = Offset(c.x, c.y + r * 0.08f)
         )
 
-        // Blinking eyes.
         val eyeOpen = (1f - blink * 0.9f).coerceIn(0.1f, 1f)
         val eyeW = r * 0.24f
         val eyeH = r * 0.28f * eyeOpen
@@ -266,7 +264,6 @@ fun Orb(phase: Phase, level: Float, reduceMotion: Boolean, modifier: Modifier = 
             )
         }
 
-        // Soft cheeks.
         listOf(-0.58f, 0.58f).forEach { dx ->
             drawCircle(
                 color = scheme.tertiary.copy(alpha = 0.35f),
@@ -275,7 +272,6 @@ fun Orb(phase: Phase, level: Float, reduceMotion: Boolean, modifier: Modifier = 
             )
         }
 
-        // Gloss highlight.
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(Color.White.copy(alpha = 0.55f), Color.Transparent),
