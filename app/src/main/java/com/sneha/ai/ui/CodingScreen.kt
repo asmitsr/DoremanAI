@@ -98,7 +98,6 @@ fun CodingScreen(vm: CodingViewModel, onBack: () -> Unit) {
                 label = { Text("Code ($lang)") }
             )
         }
-        // v2.0 toolbar: Run / Stop / Save / Export are separate, labelled actions.
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { vm.requestRun() }) { Text("▶ Run") }
             OutlinedButton(onClick = { vm.cancelRun() }, enabled = running) { Text("■ Stop") }
