@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// v2.0: shared shapes — small 12dp, medium 16dp, large 20dp.
 // Existing colour schemes and the SnehaTheme signature are unchanged.
 private val DoremanShapes = Shapes(
     small = RoundedCornerShape(12.dp),
@@ -72,7 +71,6 @@ private val LightScheme = lightColorScheme(
 )
 
 private val MidnightScheme = darkColorScheme(
-    // Midnight Indigo #282B4A background, Vanilla #EEEBDA surfaces/text.
     primary = Color(0xFFEEEBDA),
     onPrimary = Color(0xFF282B4A),
     primaryContainer = Color(0xFF4A4E7A),
