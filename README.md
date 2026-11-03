@@ -1,13 +1,13 @@
 <div align="center">
 
-# 🤖 Doreman AI (ডোরেমন এআই)
+# Doreman AI (ডোরেমন এআই)
 
 [![Kotlin](https://img.shields.io/badge/KOTLIN-1.9.22-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/JETPACK%20COMPOSE-MATERIAL%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Custom Gateway](https://img.shields.io/badge/CUSTOM%20GATEWAY-CLAUDE%20%7C%20GPT-10B981?style=for-the-badge)](https://github.com/)
 [![Google Gemini](https://img.shields.io/badge/GOOGLE%20GEMINI-API-8E75B2?style=for-the-badge)](https://ai.google.dev/)
 
-**An advanced Siri-style voice-controlled personal assistant for Android, powered by cutting-edge AI.**
+**A Siri-style voice-controlled personal assistant for Android.**
 
 **আপনার অ্যান্ড্রয়েড ফোনের জন্য সিরি-স্টাইলের ভয়েস অ্যাসিস্ট্যান্ট — বাংলায় বা ইংরেজিতে কথা বলুন, আর ফোন নিজেই কাজ করুক।**
 
@@ -15,21 +15,21 @@
 
 ---
 
-## 📥 Download / ডাউনলোড
+## Download / ডাউনলোড
 
 **Latest APK (direct link, always the newest build):**
 
-👉 **[https://github.com/asmitsr/DoremanAI/releases/tag/latest-apk](https://github.com/asmitsr/DoremanAI/releases/tag/latest-apk)**
+ **[https://github.com/asmitsr/DoremanAI/releases/tag/latest-apk](https://github.com/asmitsr/DoremanAI/releases/tag/latest-apk)**
 
 > Inside that release, download **`app-debug.apk`** and install it on your phone.
 > এই রিলিজের ভেতর থেকে **`app-debug.apk`** ডাউনলোড করে ফোনে ইনস্টল করুন।
 >
-> ⚠️ This is a **debug APK** built automatically by GitHub Actions on every push to `main` — it is always overwritten under the `latest-apk` tag, so the link above always points to the newest version. It is **not** a signed Play Store release.
+> This is a **debug APK** built automatically by GitHub Actions on every push to `main` — it is always overwritten under the `latest-apk` tag, so the link above always points to the newest version. It is **not** a signed Play Store release.
 > এটি একটি **ডিবাগ APK**, `main`-এ প্রতিটি পুশের পর GitHub Actions স্বয়ংক্রিয়ভাবে বানায়। তাই লিংকটি সবসময় নতুন ভার্সনেই যাবে, কিন্তু এটি Play Store-এর সাইন করা রিলিজ নয়।
 
 ---
 
-## 📌 Introduction / পরিচয়
+## Introduction / পরিচয়
 
 **Doreman AI** হলো আপনার অ্যান্ড্রয়েড ডিভাইসের জন্য তৈরি একটি স্মার্ট ও দ্রুতগতির ভয়েস-কন্ট্রোলড পার্সোনাল অ্যাসিস্ট্যান্ট। এটি আপনার প্রাত্যহিক কাজগুলোকে ভয়েস কমান্ডের মাধ্যমে সম্পূর্ণ স্বয়ংক্রিয় করে তোলে।
 
@@ -37,46 +37,46 @@ Doreman AI is a smart, fast, Siri-style voice assistant for Android. Speak a com
 
 ---
 
-## ✨ What's new in v1.2.0 / v1.2.0-এ যা নতুন
+## What's new in v1.2.0 / v1.2.0-এ যা নতুন
 
 | Change | Details |
 | :--- | :--- |
-| 🎨 **Midnight Indigo theme** | New theme: Midnight Indigo `#282B4A` background + Vanilla `#EEEBDA` surfaces/text. Settings → Theme → “মিডনাইট ইন্ডিগো”. |
-| 🤖 **New home animation** | The old 2D purple orb is replaced by an **original** animated robot companion (blinking eyes, speaking mouth, orbiting rings, voice-reactive pulse). It is an original design — not a copy of any existing cartoon character. |
-| 🌐 **Bengali + English** | Real language switch: Settings → Voice → Language. It changes speech recognition (`bn-BD` / `en-US`), TTS voice and the AI's reply language. |
-| 🔑 **Third-party key fixes** | Bearer mode now sends only `Authorization: Bearer`; a blank gateway key no longer silently sends your Gemini key (clear error instead); Test Connection no longer shows fake model lists; a blank model no longer defaults to a stale model. |
-| 🎙️ **Long speech fixed** | Longer silence windows (2500ms / 1200ms) and words recognised before a timeout are now delivered instead of dropped. |
-| ⚡ **Siri-like fast commands** | Call, open app, Play Store install, YouTube search, volume and media commands now run locally without waiting for the AI — the AI still handles everything else. |
+| **Midnight Indigo theme** | New theme: Midnight Indigo `#282B4A` background + Vanilla `#EEEBDA` surfaces/text. Settings → Theme → “মিডনাইট ইন্ডিগো”. |
+| **New home animation** | The old 2D purple orb is replaced by an **original** animated robot companion (blinking eyes, speaking mouth, orbiting rings, voice-reactive pulse). It is an original design — not a copy of any existing cartoon character. |
+| **Bengali + English** | Real language switch: Settings → Voice → Language. It changes speech recognition (`bn-BD` / `en-US`), TTS voice and the AI's reply language. |
+| **Third-party key fixes** | Bearer mode now sends only `Authorization: Bearer`; a blank gateway key no longer silently sends your Gemini key (clear error instead); Test Connection no longer shows fake model lists; a blank model no longer defaults to a stale model. |
+| **Long speech fixed** | Longer silence windows (2500ms / 1200ms) and words recognised before a timeout are now delivered instead of dropped. |
+| **Siri-like fast commands** | Call, open app, Play Store install, YouTube search, volume and media commands now run locally without waiting for the AI — the AI still handles everything else. |
 
 ---
 
-## ⚙️ Core Features
+## Core Features
 
 | Feature | Status | Description |
 | :--- | :---: | :--- |
-| **Custom Gateway (`sk-...` Token)** | ✅ Active | Support for third-party Base URLs and premium models (Claude Opus/Sonnet, GPT-4o). |
-| **Google Gemini Official API** | ✅ Active | Direct Gemini mode, with fallback models. |
-| **Silent Wake-Word (`"Doreman"`)** | ✅ Active | Wakes up instantly and silently upon hearing the wake word without annoying beep sounds. |
-| **Phonetic Contact Calling** | ✅ Active | Automatically searches and calls saved contacts using Bengali or English pronunciation. |
-| **Play Store Automation** | ✅ Active | Opens the Play Store via voice command and automatically taps the `Install` button. |
-| **WhatsApp Auto-Send** | ✅ Active | Finds contacts or numbers, types messages, and automatically triggers the `Send` button. |
-| **Mobile Booster & Cleaner** | ✅ Active | Clears device cache and launches system cleaner tools instantly. |
-| **Bengali + English** | ✅ Active | Full language switch for voice, TTS and AI replies. |
-| **Midnight Indigo Theme** | ✅ Active | `#282B4A` + `#EEEBDA` theme, alongside Dark and Light. |
+| **Custom Gateway (`sk-...` Token)** | Active | Support for third-party Base URLs and premium models (Claude Opus/Sonnet, GPT-4o). |
+| **Google Gemini Official API** | Active | Direct Gemini mode, with fallback models. |
+| **Silent Wake-Word (`"Doreman"`)** | Active | Wakes up instantly and silently upon hearing the wake word without annoying beep sounds. |
+| **Phonetic Contact Calling** | Active | Automatically searches and calls saved contacts using Bengali or English pronunciation. |
+| **Play Store Automation** | Active | Opens the Play Store via voice command and automatically taps the `Install` button. |
+| **WhatsApp Auto-Send** | Active | Finds contacts or numbers, types messages, and automatically triggers the `Send` button. |
+| **Mobile Booster & Cleaner** | Active | Clears device cache and launches system cleaner tools instantly. |
+| **Bengali + English** | Active | Full language switch for voice, TTS and AI replies. |
+| **Midnight Indigo Theme** | Active | `#282B4A` + `#EEEBDA` theme, alongside Dark and Light. |
 
 ---
 
-## 🚀 Quick Setup / দ্রুত সেটআপ
+## Quick Setup / দ্রুত সেটআপ
 
 1. **Download APK:** Use the direct link above, download **`app-debug.apk`**, and install it on your device.
-2. **Permissions:** Open the app, go to **Settings (⚙️) > Permission Setup Hub**, and grant all required permissions including **Accessibility** (needed for auto-tap / auto-install / WhatsApp auto-send).
-3. **Configure AI Brain:** Go to **Settings (⚙️) > AI Brain & Custom Gateway**, choose Gemini or Custom Gateway, enter your key, and press **Test Connection**.
+2. **Permissions:** Open the app, go to **Settings > Permission Setup Hub**, and grant all required permissions including **Accessibility** (needed for auto-tap / auto-install / WhatsApp auto-send).
+3. **Configure AI Brain:** Go to **Settings > AI Brain & Custom Gateway**, choose Gemini or Custom Gateway, enter your key, and press **Test Connection**.
 4. **Language & Look:** Go to **Settings > Voice > Language** for বাংলা / English, and **Settings > Theme** for Dark / Light / Midnight Indigo.
 5. **Talk:** Say **“Doreman”** (or tap the mic) and give a command — see the command list below.
 
 ---
 
-## 🔑 Third-party key setup (Custom Gateway) — read this first
+## Third-party key setup (Custom Gateway) — read this first
 
 A third-party key works **only if all four match your gateway**:
 
@@ -94,7 +94,7 @@ A third-party key works **only if all four match your gateway**:
 
 ---
 
-## 🗣️ Commands / কমান্ডের তালিকা
+## Commands / কমান্ডের তালিকা
 
 Say **“Doreman”** first, or tap the mic. Examples in both languages:
 
@@ -114,7 +114,7 @@ Say **“Doreman”** first, or tap the mic. Examples in both languages:
 
 ---
 
-## 🎙️ Speech tips / কথা বলার টিপস
+## Speech tips / কথা বলার টিপস
 
 - **Long sentences:** v1.2.0 gives you more silence time before a session ends (complete-silence 2500ms), and words recognised before a timeout are delivered instead of dropped. If you pause mid-sentence, the recognised part is still used.
 - **If speech stops early:** Check that the correct language is selected (Settings → Voice → Language), that microphone permission is granted, and that a Bengali TTS voice is installed for Bengali replies (Settings → Voice → TTS engine settings).
@@ -122,7 +122,7 @@ Say **“Doreman”** first, or tap the mic. Examples in both languages:
 
 ---
 
-## 🛠️ Build from source / সোর্স থেকে বানানো
+## Build from source / সোর্স থেকে বানানো
 
 ```bash
 # Android Studio (recommended) — or:
@@ -135,7 +135,7 @@ Every push to `main` also builds the debug APK automatically via GitHub Actions 
 
 ---
 
-## 🔐 Permissions / পারমিশন
+## Permissions / পারমিশন
 
 | Permission | Why it is needed |
 | :--- | :--- |
@@ -149,7 +149,7 @@ Every push to `main` also builds the debug APK automatically via GitHub Actions 
 
 ---
 
-## 🔒 Privacy / প্রাইভেসি
+## Privacy / প্রাইভেসি
 
 - **Your API keys never leave your device except to the provider you chose** (Gemini or your own gateway). They are stored in the Android Keystore (AES-GCM) — there is no Doreman server, and keys are never put in share links or logs.
 - Voice is processed by Android's on-device / Google speech service and by your chosen AI provider, as with any voice assistant.
@@ -157,7 +157,7 @@ Every push to `main` also builds the debug APK automatically via GitHub Actions 
 
 ---
 
-## 🧰 Troubleshooting / সমস্যা হলে
+## Troubleshooting / সমস্যা হলে
 
 | Symptom | Likely cause / fix |
 | :--- | :--- |
@@ -173,7 +173,7 @@ Every push to `main` also builds the debug APK automatically via GitHub Actions 
 
 ---
 
-## 📜 Changelog
+## Changelog
 
 ### v1.2.0 (this update)
 - Midnight Indigo `#282B4A` + Vanilla `#EEEBDA` theme + Settings option.
@@ -189,7 +189,7 @@ Every push to `main` also builds the debug APK automatically via GitHub Actions 
 
 ---
 
-## 🧑‍💻 Tech Stack
+## Tech Stack
 
 - Kotlin 1.9.22, Jetpack Compose Material 3
 - Android SpeechRecognizer + TextToSpeech
@@ -197,7 +197,7 @@ Every push to `main` also builds the debug APK automatically via GitHub Actions 
 - Google Gemini API + Custom Gateways (Claude / GPT / others)
 - DataStore + Android Keystore for settings and keys
 
-## 📄 License
+## License
 
 MIT License — see `LICENSE` (if present in the repo).
 
