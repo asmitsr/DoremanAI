@@ -152,7 +152,7 @@ fun SettingsScreen(vm: MainViewModel, initial: String?, onBack: () -> Unit) {
                         }
                     }
                 }
-                } // end groups.forEach
+                }
             }
             "ai" -> AiPage(vm)
             "voice" -> VoicePage(vm)
