@@ -18,16 +18,28 @@ jobs:
         with:
           gradle-version: '8.5'
           cache-disabled: true
-      - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+      - name: Decode release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > app/release.keystore
+          echo "KEYSTORE_FILE=$GITHUB_WORKSPACE/app/release.keystore" >> "$GITHUB_ENV"
+          echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+      - name: Build signed release APK
+        run: gradle assembleRelease --no-daemon --stacktrace
       - name: Publish APK to Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest-apk
-          name: "Doreman AI v1.1.0 (Latest APK)"
-          files: app/build/outputs/apk/debug/app-debug.apk
+          tag_name: latest-release-apk
+          name: "Doreman AI v2.1.1 (Signed Release)"
+          files: app/build/outputs/apk/release/app-release.apk
       - uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
-          name: doreman-ai-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: doreman-ai-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
