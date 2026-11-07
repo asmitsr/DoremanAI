@@ -153,6 +153,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val local = LocalCommands.parse(cleanedCmd, settings.value.lang)
             if (local != null) {
                 a.tts.stop()
+                thinkJob?.cancel()
                 a.chat.add(ChatMsg("user", cleanedCmd))
                 phase.value = Phase.Idle
                 handle(local, if (settings.value.lang == "bn") "Local command" else "Local command", false)

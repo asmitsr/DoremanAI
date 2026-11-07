@@ -176,6 +176,7 @@ class ActionExecutor(private val app: SnehaApp) {
         delay(3200)
         var installed = false
         repeat(3) {
+            if (installed) return@repeat
             if (s.tapByText("Install") || s.tapByText("ইনস্টল করুন") || s.tapByText("ইনস্টল")) {
                 installed = true
                 return@repeat
