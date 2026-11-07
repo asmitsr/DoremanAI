@@ -122,19 +122,19 @@ A third-party key works **only if all four match your gateway**:
 
 ## Commands
 
-Say **"Doreman"** first, or tap the mic.
+Say **"Doreman"** first, or tap the mic. The same commands also work when spoken in Bengali.
 
-| What you want | Bengali example | English example |
-| :--- | :--- | :--- |
-| Call someone | "বাবাকে কল দাও" | "Call Baba" |
-| Open an app | "YouTube খোলো" | "Open YouTube" |
-| Download a game/app | "Free Fire ডাউনলোড করো" | "Download Free Fire" |
-| Play on YouTube | "ইউটিউবে অরিজিৎ সিং চালাও" | "YouTube search Arijit Singh" |
-| WhatsApp message | "হোয়াটসঅ্যাপে এম এ কে মেসেজ দাও কেমন আছো" | "WhatsApp MA: how are you" |
-| Volume | "ভলিউম বাড়াও / কমাও" | "Volume up / down" |
-| Music control | "পরের গান / গান থামাও" | "Next song / pause music" |
-| Clean phone | "মোবাইল ক্লিন করো" | "Clean my phone" |
-| Lock screen | "স্ক্রিন লক করো" | "Lock screen" |
+| What you want | Example |
+| :--- | :--- |
+| Call someone | "Call Baba" |
+| Open an app | "Open YouTube" |
+| Download a game/app | "Download Free Fire" |
+| Play on YouTube | "YouTube search Arijit Singh" |
+| WhatsApp message | "WhatsApp MA: how are you" |
+| Volume | "Volume up / down" |
+| Music control | "Next song / pause music" |
+| Clean phone | "Clean my phone" |
+| Lock screen | "Lock screen" |
 
 > Fast-path note: Call, Open App, Play Store Install, YouTube Search, Volume, and Media are handled locally for speed; everything else goes through the AI plan, exactly as before. SMS/WhatsApp stay on the AI path because their target + message parsing is ambiguous in free speech.
 
@@ -144,7 +144,7 @@ Say **"Doreman"** first, or tap the mic.
 
 - **Long sentences:** The app gives you more silence time before a session ends (complete-silence 2500 ms), and words recognised before a timeout are delivered instead of dropped. If you pause mid-sentence, the recognised part is still used.
 - **If speech stops early:** Check that the correct language is selected (Settings → Voice → Language), that microphone permission is granted, and that a Bengali TTS voice is installed for Bengali replies (Settings → Voice → TTS engine settings).
-- **Wake word:** The app listens in the foreground for "Doreman" / "ডোরেমন" and common variants. There is no on-device hotword chip — it is repeated recognizer sessions while the app is in the foreground, so it stops when you leave the app.
+- **Wake word:** The app listens in the foreground for "Doreman" and common variants, including its Bengali pronunciation. There is no on-device hotword chip — it is repeated recognizer sessions while the app is in the foreground, so it stops when you leave the app.
 
 ---
 
