@@ -19,4 +19,3 @@ so the safest emergency fix is to stop invoking Mascot3D from Home entirely.
 
 ## Not changed
 Automation, voice, gateway, AI, Settings, Code Studio, language (English UI).
-Still a debug APK, not a signed release.
