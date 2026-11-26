@@ -34,6 +34,7 @@ data class Settings(
     val termuxEnabled: Boolean = false,
     val notifyAutomation: Boolean = true,
     val stayAwake: Boolean = false,
+    val agentMode: Boolean = false, // v2.2.0: ARTEMIS-style agent loop
     val reqCount: Int = 0,
     val tokensIn: Long = 0,
     val tokensOut: Long = 0,
@@ -64,6 +65,7 @@ object K {
     val termux = booleanPreferencesKey("termux_enabled")
     val notify = booleanPreferencesKey("notify_automation")
     val stayAwake = booleanPreferencesKey("stay_awake")
+    val agentMode = booleanPreferencesKey("agent_mode")
     val req = intPreferencesKey("req_count")
     val tin = longPreferencesKey("tokens_in")
     val tout = longPreferencesKey("tokens_out")
@@ -97,6 +99,7 @@ class Prefs(private val ctx: Context) {
             termuxEnabled = p[K.termux] ?: d.termuxEnabled,
             notifyAutomation = p[K.notify] ?: d.notifyAutomation,
             stayAwake = p[K.stayAwake] ?: d.stayAwake,
+            agentMode = p[K.agentMode] ?: d.agentMode,
             reqCount = p[K.req] ?: 0,
             tokensIn = p[K.tin] ?: 0L,
             tokensOut = p[K.tout] ?: 0L,

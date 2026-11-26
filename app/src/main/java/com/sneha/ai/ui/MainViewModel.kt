@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sneha.ai.SnehaApp
 import com.sneha.ai.ai.*
+import com.sneha.ai.automation.AgentLoop
 import com.sneha.ai.automation.SnehaAccessibilityService
 import com.sneha.ai.automation.DoremanVoiceService
 import com.sneha.ai.data.K
@@ -190,6 +191,22 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 autoFallback = s.autoFallback,
                 maxRetries = s.maxRetries
             )
+
+            // v2.2.0: ARTEMIS-style agent mode — the AI sees the screen and
+            // acts one step at a time until the goal is done (AgentLoop).
+            // Needs the Accessibility service to read the screen; when it
+            // is off, fall through to the one-shot path below unchanged.
+            // Runs in thinkJob, so stopAll() / StopReceiver still cancel it.
+            val svc = SnehaAccessibilityService.instance
+            if (s.agentMode && svc != null) {
+                val answer = AgentLoop.run(cleanedCmd, currentProvider(), cfg, a.executor, svc) { status ->
+                    retryStatus.value = status
+                }
+                phase.value = Phase.Idle
+                retryStatus.value = null
+                handle(Plan(answer, emptyList(), emptyList()), s.model, false)
+                return@launch
+            }
 
             val res = currentProvider().generate(sys, hist, cfg, true) { statusMsg ->
                 retryStatus.value = statusMsg

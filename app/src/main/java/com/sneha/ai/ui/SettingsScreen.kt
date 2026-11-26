@@ -446,6 +446,7 @@ fun VoicePage(vm: MainViewModel) {
 @Composable
 fun AutoPage(vm: MainViewModel) {
     val ctx = LocalContext.current
+    val s by vm.settings.collectAsStateWithLifecycle()
     val on by SnehaAccessibilityService.connected.collectAsStateWithLifecycle()
     Column(Modifier.verticalScroll(rememberScrollState())) {
         SecCard("Accessibility service status") {
@@ -458,6 +459,10 @@ fun AutoPage(vm: MainViewModel) {
             Button(onClick = { openIntent(ctx, Intent(AndroidSettings.ACTION_ACCESSIBILITY_SETTINGS), vm) }) {
                 Text("Open Android Accessibility Settings")
             }
+        }
+        SecCard("AI Agent Mode") {
+            SwitchRow("AI Agent Mode", s.agentMode) { vm.set(K.agentMode, it) }
+            Note("ARTEMIS-style: AI sees the screen and acts step by step")
         }
     }
 }

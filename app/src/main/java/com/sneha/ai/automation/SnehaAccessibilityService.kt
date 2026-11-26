@@ -30,6 +30,10 @@ import kotlin.coroutines.resume
  */
 data class ScreenSnapshot(val packageName: String = "", val texts: List<String> = emptyList())
 
+// v2.2.0: structured screen dump for the ARTEMIS-style agent loop (AgentLoop).
+data class UiElement(val index: Int, val text: String, val clickable: Boolean, val editable: Boolean, val cx: Int, val cy: Int)
+data class ScreenDump(val pkg: String, val elements: List<UiElement>)
+
 class SnehaAccessibilityService : AccessibilityService() {
 
     companion object {
@@ -267,5 +271,27 @@ class SnehaAccessibilityService : AccessibilityService() {
             out.size >= 60
         }
         return out
+    }
+
+    // v2.2.0: structured dump for AgentLoop — text/clickable/editable nodes
+    // with screen-center coordinates, capped at 60. Password fields are
+    // never included (same rule as readScreen / the screen watcher).
+    fun dumpScreen(): ScreenDump {
+        val out = mutableListOf<UiElement>()
+        val root = rootInActiveWindow
+        if (root != null) {
+            walk(root) { n ->
+                if (!n.isPassword) {
+                    val t = (n.text ?: n.contentDescription)?.toString().orEmpty()
+                    if (t.isNotBlank() || n.isClickable || n.isEditable) {
+                        val b = Rect()
+                        n.getBoundsInScreen(b)
+                        out.add(UiElement(out.size, t.take(80), n.isClickable, n.isEditable, b.centerX(), b.centerY()))
+                    }
+                }
+                out.size >= 60
+            }
+        }
+        return ScreenDump(foregroundPackage() ?: "", out)
     }
 }
