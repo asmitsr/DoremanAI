@@ -92,6 +92,33 @@ object LocalCommands {
             return Plan(ok, listOf(Action.CallContact(callTarget)), emptyList())
         }
 
+        // --- Camera / gallery recipes (v2.2.2) -------------------------------
+        // Deterministic sequences for icon-only screens the LLM agent
+        // cannot read reliably. TapAnyText tries common button labels.
+        val switchLabels = listOf("Switch camera", "Switch", "Front camera", "Front", "Selfie", "Rotate", "Flip")
+        val shutterLabels = listOf("Capture", "Take photo", "Take picture", "Shutter")
+        if (lower.contains("সেলফি") || lower.contains("selfie") || lower.contains("ফ্রন্ট ক্যামেরা")) {
+            return Plan(ok, listOf(
+                Action.OpenApp("Camera"), Action.Wait(1800L),
+                Action.TapAnyText(switchLabels), Action.Wait(800L),
+                Action.TapAnyText(shutterLabels)
+            ), emptyList())
+        }
+        if (lower.contains("ছবি তোলো") || lower.contains("ছবি তুলো") || lower.contains("ছবি তুল") ||
+            lower.contains("take a photo") || lower.contains("take photo")) {
+            return Plan(ok, listOf(
+                Action.OpenApp("Camera"), Action.Wait(1800L),
+                Action.TapAnyText(shutterLabels)
+            ), emptyList())
+        }
+        if ((lower.contains("ছবি") && lower.contains("দেখাও")) || lower.contains("শেষ ছবি") ||
+            (lower.contains("show") && lower.contains("photo"))) {
+            return Plan(ok, listOf(
+                Action.OpenApp("Gallery"), Action.Wait(1500L),
+                Action.TapAnyText(listOf("Photo", "Image", "ছবি"))
+            ), emptyList())
+        }
+
         // --- Open an app ----------------------------------------------------
         // "YouTube Bengali command" / "Bengali command YouTube" / "open YouTube"
         val openTarget = extractAfterAny(lower, listOf(" খোলো", " খুলো", " open "))

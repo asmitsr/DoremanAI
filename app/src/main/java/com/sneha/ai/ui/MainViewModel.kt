@@ -265,6 +265,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val badge = if (usedFallback) "$modelUsed (fallback)" else modelUsed
         a.chat.add(ChatMsg(role = "model", text = reply, modelUsed = badge))
         lastSpokenReply.value = reply
+        // v2.2.2: re-arm follow-ups immediately — do not depend on the
+        // TTS completion callback, which some engines never fire.
+        awakeForNextCommand = true
 
         val hasActions = p.actions.isNotEmpty()
         if (settings.value.autoSpeak && inForeground) {

@@ -18,6 +18,8 @@ sealed class Action {
     object PowerMenu : Action()
     data class TapText(val text: String) : Action()
     data class TapXY(val x: Int, val y: Int) : Action()
+    data class TapIndex(val index: Int) : Action()
+    data class TapAnyText(val texts: List<String>) : Action()
     data class Scroll(val down: Boolean) : Action()
     object Back : Action()
     object Home : Action()
@@ -34,7 +36,7 @@ sealed class Action {
 }
 
 fun Action.isUi(): Boolean = when (this) {
-    is Action.TapText, is Action.TapXY, is Action.Scroll, is Action.TypeText -> true
+    is Action.TapText, is Action.TapXY, is Action.TapIndex, is Action.TapAnyText, is Action.Scroll, is Action.TypeText -> true
     Action.Back, Action.Home, Action.Enter, Action.ReadScreen, Action.LockScreen, Action.PowerMenu -> true
     is Action.YouTubeSearch -> playFirst
     is Action.PlayStoreInstall -> true
@@ -57,6 +59,8 @@ fun Action.describe(): String = when (this) {
     Action.PowerMenu -> "Opening power / shutdown menu"
     is Action.TapText -> "Tap: \"$text\""
     is Action.TapXY -> "Tap: ($x,$y)"
+    is Action.TapIndex -> "Tap element [$index]"
+    is Action.TapAnyText -> "Tap: " + texts.joinToString("/") { "\"$it\"" }
     is Action.Scroll -> "Scroll " + if (down) "down" else "up"
     Action.Back -> "Back pressed"
     Action.Home -> "Going Home"
@@ -144,6 +148,13 @@ object PlanParser {
                     val x = a.optInt("x", -1)
                     val y = a.optInt("y", -1)
                     if (x in 0..5000 && y in 0..5000) Action.TapXY(x, y) else null
+                }
+                "ui_tap_index" -> a.optInt("index", -1).takeIf { it in 0..200 }?.let { Action.TapIndex(it) }
+                "ui_tap_any" -> {
+                    val ts = a.optJSONArray("texts")?.let { arr ->
+                        (0 until minOf(arr.length(), 6)).map { arr.optString(it).trim() }.filter { it.isNotBlank() }
+                    } ?: a.optString("text").trim().takeIf { it.isNotBlank() }?.let { listOf(it) }
+                    ts?.takeIf { it.isNotEmpty() }?.let { Action.TapAnyText(it.map { t -> t.take(80) }) }
                 }
                 "ui_scroll" -> when (a.optString("direction").trim().lowercase()) {
                     "down" -> Action.Scroll(true)

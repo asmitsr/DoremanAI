@@ -294,4 +294,25 @@ class SnehaAccessibilityService : AccessibilityService() {
         }
         return ScreenDump(foregroundPackage() ?: "", out)
     }
+
+    // v2.2.2: tap the element dumpScreen() listed at [index], using the
+    // same walk order and predicate so indices line up with the prompt.
+    suspend fun tapByIndex(index: Int): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val nodes = mutableListOf<AccessibilityNodeInfo>()
+        walk(root) { n ->
+            if (!n.isPassword) {
+                val t = (n.text ?: n.contentDescription)?.toString().orEmpty()
+                if (t.isNotBlank() || n.isClickable || n.isEditable) nodes.add(n)
+            }
+            nodes.size > index
+        }
+        val target = nodes.getOrNull(index) ?: return false
+        val c = clickableAncestor(target)
+        if (c != null && c.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return true
+        val b = Rect()
+        target.getBoundsInScreen(b)
+        if (b.isEmpty) return false
+        return tapXY(b.centerX(), b.centerY())
+    }
 }

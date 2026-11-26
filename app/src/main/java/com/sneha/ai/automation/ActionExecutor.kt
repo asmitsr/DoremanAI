@@ -150,6 +150,8 @@ class ActionExecutor(private val app: SnehaApp) {
     private suspend fun uiStep(a: Action, s: SnehaAccessibilityService): R = when (a) {
         is Action.TapText -> changed(s) { s.tapByText(a.text) }
         is Action.TapXY -> changed(s) { s.tapXY(a.x, a.y) }
+        is Action.TapIndex -> changed(s) { s.tapByIndex(a.index) }
+        is Action.TapAnyText -> changed(s) { a.texts.any { t -> s.tapByText(t) } }
         is Action.Scroll -> changed(s) { s.scroll(a.down) }
         Action.Back -> { val ok = s.back(); R(ok, if (ok) "Back sent" else "Back failed") }
         Action.Home -> { val ok = s.home(); R(ok, if (ok) "Home sent" else "Home failed") }
