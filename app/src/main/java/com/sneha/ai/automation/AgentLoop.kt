@@ -30,7 +30,7 @@ object AgentLoop {
     private val AGENT_SYSTEM = """
 You control an Android phone to achieve the user's goal. Reply ONLY with JSON: {"reply":"...","actions":[ ONE action object ]}.
 Action types (with their fields): open_app {app}, play_store_install {query}, call_contact {target}, send_sms {target, message}, whatsapp_msg {target, message}, youtube_search {query, play_first}, media {command: play|pause|next|previous}, volume {direction: up|down|mute|unmute}, system_setting {panel: wifi|bluetooth|sound|display|location|airplane}, clean_phone, lock_screen, power_menu, ui_tap_text {text}, ui_tap_xy {x, y}, ui_scroll {direction: down|up}, ui_back, ui_home, ui_type {text}, ui_enter, ui_read, wait {ms}, remember {text}, flashlight {on}, wifi {mode: on|off|connect|status, ssid}, bluetooth {mode: on|off|connect|list, device}, stay_awake {on}.
-Rules: Prefer ui_tap_text with the exact visible text. Use ui_tap_xy with an element's center coordinates only when a text tap is impossible. Use open_app to launch apps. When the goal is fully achieved, or the answer is visible on screen, return actions: [] and put the final answer in "reply" in the same language as the goal (Bengali or English). Never invent screen content; act only on listed elements. One action per reply.
+Rules: Prefer ui_tap_text with the exact visible text. Use ui_tap_xy with an element's center coordinates only when a text tap is impossible. Use open_app to launch apps. When the goal is fully achieved, or the answer is visible on screen, return actions: [] and put the final answer in "reply" in the same language as the goal (Bengali or English). Never invent screen content; act only on listed elements. One action per reply. Return ONLY the JSON object — no markdown fences, no explanation. Example: {"reply":"","actions":[{"type":"open_app","app":"Settings"}]}
 """.trimIndent()
 
     suspend fun run(
@@ -42,6 +42,7 @@ Rules: Prefer ui_tap_text with the exact visible text. Use ui_tap_xy with an ele
         onStatus: (String) -> Unit
     ): String {
         val history = mutableListOf<String>()
+        var lastRaw = ""
         var lastDumpKey = ""
         var sameCount = 0
         try {
@@ -55,7 +56,8 @@ Rules: Prefer ui_tap_text with the exact visible text. Use ui_tap_xy with an ele
                 if (dumpKey == lastDumpKey) {
                     sameCount++
                     if (sameCount >= 3) {
-                        return "I could not make progress — the screen stayed the same after repeated tries."
+                        return "I could not make progress — the screen stayed the same after repeated tries." +
+                            if (lastRaw.isNotBlank()) "\nModel said: ${lastRaw.take(160)}" else ""
                     }
                 } else {
                     sameCount = 1
@@ -87,9 +89,23 @@ Rules: Prefer ui_tap_text with the exact visible text. Use ui_tap_xy with an ele
                     if (e is CancellationException) throw e
                     return (e as? AiException)?.userMessage() ?: "Agent error: ${e.message}"
                 }
+                lastRaw = reply.text
                 val plan = PlanParser.parse(reply.text)
                 if (plan.actions.isEmpty()) {
-                    return plan.reply.ifBlank { "Done." }
+                    // A non-blank reply with no actions = goal done / answer.
+                    if (plan.reply.isNotBlank()) return plan.reply
+                    // Blank reply + no actions after real steps = finished.
+                    if (history.isNotEmpty() && plan.rejected.isEmpty()) return "Done."
+                    // Otherwise the model failed to act (bad JSON or a
+                    // rejected action type) — feed that back and retry
+                    // instead of reporting a fake "Done."
+                    val why = if (plan.rejected.isNotEmpty())
+                        "Your action type(s) ${plan.rejected.joinToString()} are invalid. Use exactly one action with a type from the list."
+                    else
+                        "You returned no action. Return exactly one action as JSON."
+                    history.add("Step $step: $why")
+                    onStatus("Step $step: retrying…")
+                    continue
                 }
 
                 val action = plan.actions.first()

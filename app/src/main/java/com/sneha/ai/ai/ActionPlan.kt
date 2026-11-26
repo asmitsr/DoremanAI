@@ -95,7 +95,10 @@ object PlanParser {
         val reply = o.optString("reply").trim().ifBlank {
             o.optString("text").trim().ifBlank { o.optString("message").trim() }
         }
-        val arr = o.optJSONArray("actions") ?: JSONArray()
+        val arr = o.optJSONArray("actions")
+            ?: o.optJSONObject("actions")?.let { JSONArray().put(it) }
+            ?: o.optJSONObject("action")?.let { JSONArray().put(it) }
+            ?: JSONArray()
         val ok = mutableListOf<Action>()
         val rej = mutableListOf<String>()
 
@@ -103,7 +106,9 @@ object PlanParser {
             val a = arr.optJSONObject(i) ?: continue
             val t = a.optString("type").trim()
             val act: Action? = when (t) {
-                "open_app" -> a.optString("app").trim().takeIf { it.isNotBlank() }?.let { Action.OpenApp(it.take(60)) }
+                "open_app" -> a.optString("app").trim().ifBlank { a.optString("app_name").trim() }
+                    .ifBlank { a.optString("name").trim() }.ifBlank { a.optString("target").trim() }
+                    .takeIf { it.isNotBlank() }?.let { Action.OpenApp(it.take(60)) }
                 "play_store_install" -> a.optString("query").trim().ifBlank { a.optString("app").trim() }
                     .takeIf { it.isNotBlank() }?.let { Action.PlayStoreInstall(it.take(100)) }
                 "call_contact" -> a.optString("target").trim().ifBlank { a.optString("name").trim() }

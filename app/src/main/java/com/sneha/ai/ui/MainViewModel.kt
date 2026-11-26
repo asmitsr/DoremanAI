@@ -60,6 +60,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val stt = SpeechInput(a)
     private var thinkJob: Job? = null
+    // v2.2.1: true while the ARTEMIS agent loop runs. Blocks the
+    // hands-free listener / foreground re-listen from cancelling the
+    // agent with a new voice command (the "Stopped." bug).
+    @Volatile private var agentRunning = false
     private var summaryClearJob: Job? = null
     private var inForeground = true
     private var awakeForNextCommand = false
@@ -102,15 +106,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun onAppForegrounded() {
         inForeground = true
         awakeForNextCommand = true
-        if (!a.executor.busy) {
+        if (!a.executor.busy && !agentRunning) {
             phase.value = Phase.Idle
         }
-        if (handsFree.value && keySet.value && !a.executor.busy && phase.value == Phase.Idle) {
+        if (handsFree.value && keySet.value && !a.executor.busy && !agentRunning && phase.value == Phase.Idle) {
             scheduleNextListen(500)
         }
     }
 
     private fun onVoiceResult(spoken: String) {
+        // v2.2.1: while the agent works, ignore barge-in speech so a
+        // stray recognition cannot cancel the running task.
+        if (agentRunning) return
         val raw = spoken.trim()
         if (raw.isEmpty()) {
             if (handsFree.value && inForeground) scheduleNextListen(600)
@@ -199,8 +206,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             // Runs in thinkJob, so stopAll() / StopReceiver still cancel it.
             val svc = SnehaAccessibilityService.instance
             if (s.agentMode && svc != null) {
-                val answer = AgentLoop.run(cleanedCmd, currentProvider(), cfg, a.executor, svc) { status ->
-                    retryStatus.value = status
+                agentRunning = true
+                val answer = try {
+                    AgentLoop.run(cleanedCmd, currentProvider(), cfg, a.executor, svc) { status ->
+                        retryStatus.value = status
+                    }
+                } finally {
+                    agentRunning = false
                 }
                 phase.value = Phase.Idle
                 retryStatus.value = null
@@ -359,6 +371,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun startListening(manualTap: Boolean = true) {
         if (!inForeground) return
+        // v2.2.1: never open a listening session mid-agent — its
+        // result would cancel the running task.
+        if (agentRunning) return
         a.tts.stop()
         if (a.executor.busy) return
         if (manualTap) awakeForNextCommand = true
