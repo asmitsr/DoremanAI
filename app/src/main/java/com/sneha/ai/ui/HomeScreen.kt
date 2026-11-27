@@ -59,6 +59,8 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
     val ctx = LocalContext.current
     val s by vm.settings.collectAsStateWithLifecycle()
     val ph by vm.uiPhase.collectAsStateWithLifecycle()
+    val mascot by vm.mascotState.collectAsStateWithLifecycle()
+    val mouthPulse by vm.mouthPulse.collectAsStateWithLifecycle()
     val partial by vm.partial.collectAsStateWithLifecycle()
     val level by vm.level.collectAsStateWithLifecycle()
     val banner by vm.banner.collectAsStateWithLifecycle()
@@ -286,14 +288,16 @@ fun HomeScreen(vm: MainViewModel, nav: (String) -> Unit) {
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Orb(
-                    phase = ph,
+                MascotView(
+                    state = mascot,
                     level = level,
+                    mouthPulse = mouthPulse,
                     reduceMotion = s.reduceMotion,
+                    phase = ph,
+                    onTap = { onMic() },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(220.dp)
-                        .clickable { onMic() }
+                        .height(300.dp)
                 )
 
                 Spacer(Modifier.height(18.dp))

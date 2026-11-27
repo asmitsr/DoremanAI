@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:transparent}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./three.module.min.js"}}</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from './addons/loaders/GLTFLoader.js';
+
+const bridge = window.AndroidBridge || null;
+function fail(msg){ try{ bridge && bridge.onModelError(String(msg)); }catch(e){} }
+window.addEventListener('error', e=>fail(e.message||'error'));
+
+let renderer, scene, camera, clock;
+let model=null, headGroup=null, armL=null, armR=null, elbowL=null, elbowR=null, smileGroup=null, glowMat=null;
+let eyes=[], pupils=[], cheeks=[];
+let running=true, rafId=null;
+let reduced=false;
+let stateName='idle';
+let micLevel=0;
+let mouthLevel=0;
+let dragY=0, dragTargetY=0, dragging=false;
+
+const STATES = {
+  idle:      {bob:.05, bobSpd:1.1, breath:.012, tilt:0,    pitch:0,    pupilY:0,    glow:.55, glowAmp:.25, glowSpd:1.4, mouth:0,   eyes:1,   wave:0, armsUp:0, squint:0},
+  listening: {bob:.03, bobSpd:1.4, breath:.010, tilt:.13,  pitch:.05,  pupilY:.012, glow:.8,  glowAmp:.55, glowSpd:4.2, mouth:0,   eyes:1,   wave:0, armsUp:0, squint:0},
+  thinking:  {bob:.025,bobSpd:.8,  breath:.010, tilt:-.06, pitch:-.20, pupilY:.03,  glow:.65, glowAmp:.35, glowSpd:2.0, mouth:0,   eyes:1,   wave:0, armsUp:0, squint:0},
+  speaking:  {bob:.045,bobSpd:1.6, breath:.012, tilt:.03,  pitch:.04,  pupilY:.005, glow:.7,  glowAmp:.4,  glowSpd:2.6, mouth:.35, eyes:1,   wave:0, armsUp:0, squint:0},
+  happy:     {bob:.11, bobSpd:3.2, breath:.016, tilt:0,    pitch:-.05, pupilY:.01,  glow:1.0, glowAmp:.5,  glowSpd:3.0, mouth:.55, eyes:.55, wave:0, armsUp:1, squint:1},
+  greeting:  {bob:.06, bobSpd:1.8, breath:.012, tilt:.09,  pitch:.02,  pupilY:.008, glow:.9,  glowAmp:.5,  glowSpd:3.0, mouth:.3,  eyes:1,   wave:1, armsUp:0, squint:0},
+  sleeping:  {bob:.018,bobSpd:.45, breath:.02,  tilt:.05,  pitch:.24,  pupilY:0,    glow:.12, glowAmp:.05, glowSpd:.6,  mouth:0,   eyes:.06, wave:0, armsUp:0, squint:0}
+};
+let cur = {...STATES.idle};
+let tgt = {...STATES.idle};
+
+window.setMascotState = function(s){ if(STATES[s]){ stateName=s; tgt={...STATES[s]}; } };
+window.setMicLevel = function(v){ micLevel = Math.max(0, Math.min(1, v||0)); };
+window.mouthPulse = function(){ mouthLevel = 1; };
+window.setReducedMotion = function(b){ reduced = !!b; };
+window.setPaused = function(p){
+  if(p){ running=false; if(rafId) cancelAnimationFrame(rafId); rafId=null; }
+  else if(!running){ running=true; clock.getDelta(); loop(); }
+};
+
+function fitCamera(){
+  const aspect = window.innerWidth/Math.max(1,window.innerHeight);
+  const halfH = 1.98, halfW = 1.3, tan = Math.tan(THREE.MathUtils.degToRad(camera.fov/2));
+  const dist = Math.max(halfH/tan, halfW/(tan*aspect));
+  camera.position.set(0, 1.92, dist);
+  camera.lookAt(0, 1.72, 0);
+}
+
+function init(){
+  renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, powerPreference:'low-power'});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.12;
+  document.body.appendChild(renderer.domElement);
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(34, window.innerWidth/window.innerHeight, .1, 100);
+  fitCamera();
+
+  scene.add(new THREE.HemisphereLight(0xcfeaff, 0x0a1628, .95));
+  const key = new THREE.DirectionalLight(0xffffff, 1.7); key.position.set(2.2, 4.5, 3.2); scene.add(key);
+  const rim = new THREE.PointLight(0x22d3ee, 14, 12); rim.position.set(-2.6, 2.4, 1.6); scene.add(rim);
+  const fill = new THREE.DirectionalLight(0x9fd8ff, .45); fill.position.set(-2, 1.2, 3); scene.add(fill);
+
+  const sc = document.createElement('canvas'); sc.width=sc.height=128;
+  const g = sc.getContext('2d'); const grad = g.createRadialGradient(64,64,4,64,64,62);
+  grad.addColorStop(0,'rgba(0,0,0,0.42)'); grad.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=grad; g.fillRect(0,0,128,128);
+  const shadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.6,2.6),
+    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc), transparent:true, depthWrite:false})
+  );
+  shadow.rotation.x = -Math.PI/2; shadow.position.y = .01; shadow.name='blobShadow';
+  scene.add(shadow);
+
+  const loader = new GLTFLoader();
+  loader.load('doreman.glb', gltf=>{ buildRig(gltf.scene); }, undefined,
+    err=>fail(err && err.message ? err.message : 'glb load failed'));
+
+  window.addEventListener('resize', onResize);
+  let lastX=0;
+  renderer.domElement.addEventListener('pointerdown', e=>{dragging=true; lastX=e.clientX;});
+  window.addEventListener('pointermove', e=>{
+    if(dragging){ dragTargetY += (e.clientX-lastX)*.005; dragTargetY=Math.max(-.7,Math.min(.7,dragTargetY)); lastX=e.clientX; }
+  });
+  window.addEventListener('pointerup', ()=>{dragging=false;});
+
+  clock = new THREE.Clock();
+  loop();
+}
+
+function buildRig(root){
+  model = root;
+  const byName = {};
+  root.traverse(o=>{ if(o.isMesh){ byName[o.name]=o; } });
+  // Recenter every part on its own bounding-box center so rotations pivot correctly.
+  Object.values(byName).forEach(m=>{
+    m.geometry.computeBoundingBox();
+    const c = new THREE.Vector3(); m.geometry.boundingBox.getCenter(c);
+    m.geometry.translate(-c.x,-c.y,-c.z);
+    m.position.copy(c);
+    m.userData.center = c.clone();
+    if(m.material && m.material.name==='Glow_Cyan'){ glowMat = m.material; }
+  });
+  if(glowMat){ glowMat.emissive = new THREE.Color(0x22d3ee); glowMat.emissiveIntensity = .6; }
+
+  function group(pivot, names){
+    const grp = new THREE.Group(); grp.position.copy(pivot); root.add(grp);
+    names.forEach(n=>{ const m=byName[n]; if(m) grp.attach(m); });
+    return grp;
+  }
+  const headNames = ['Head_Main','Helmet_Outer_Rim','Helmet_Inner_Cyan_Ring','Face_Plate','Eye_White_L','Pupil_L','Eye_Glint_L','Eyebrow_L','Eye_White_R','Pupil_R','Eye_Glint_R','Eyebrow_R','Nose','Rosy_Cheek_L','Rosy_Cheek_R','Smile_0','Smile_1','Smile_2','Smile_3','Headphone_Cup_L','Headphone_Glow_Ring_L','Headphone_Center_L','Headphone_Cup_R','Headphone_Glow_Ring_R','Headphone_Center_R','Antenna_Stem_L','Antenna_Orb_L','Antenna_Stem_R','Antenna_Orb_R'];
+  headGroup = group(new THREE.Vector3(0,1.82,.02), headNames);
+
+  function arm(S){
+    const sh = byName['Shoulder_'+S];
+    const pivot = sh ? sh.userData.center.clone() : new THREE.Vector3(S==='L'?-.55:.55,1.58,0);
+    const grp = group(pivot, ['Shoulder_'+S,'Upper_Arm_'+S,'Elbow_'+S]);
+    const el = byName['Elbow_'+S];
+    const ep = el ? el.userData.center.clone() : pivot.clone();
+    const eg = new THREE.Group(); eg.position.copy(ep); root.add(eg);
+    ['Forearm_'+S,'Palm_'+S,'Finger_'+S+'_0','Finger_'+S+'_1','Finger_'+S+'_2'].forEach(n=>{ const m=byName[n]; if(m) eg.attach(m); });
+    grp.attach(eg);
+    return {grp, eg};
+  }
+  const aL = arm('L'), aR = arm('R');
+  armL=aL.grp; elbowL=aL.eg; armR=aR.grp; elbowR=aR.eg;
+
+  smileGroup = new THREE.Group(); smileGroup.position.set(0,1.99,.68); headGroup.add(smileGroup);
+  ['Smile_0','Smile_1','Smile_2','Smile_3'].forEach(n=>{ const m=byName[n]; if(m) smileGroup.attach(m); });
+
+  eyes = ['Eye_White_L','Eye_White_R','Pupil_L','Pupil_R','Eye_Glint_L','Eye_Glint_R'].map(n=>byName[n]).filter(Boolean);
+  pupils = ['Pupil_L','Pupil_R'].map(n=>byName[n]).filter(Boolean);
+  pupils.forEach(p=>{ p.userData.base = p.position.clone(); });
+  cheeks = ['Rosy_Cheek_L','Rosy_Cheek_R'].map(n=>byName[n]).filter(Boolean);
+
+  scene.add(root);
+  try{ bridge && bridge.onModelReady(); }catch(e){}
+}
+
+let nextBlink = 2.5, blinkT = -1;
+function loop(){
+  if(!running) return;
+  rafId = requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), .05);
+  const t = clock.elapsedTime;
+  const k = 1 - Math.exp(-5*dt);
+  for(const key in tgt){ cur[key] += (tgt[key]-cur[key])*k; }
+  const motion = reduced ? 0 : 1;
+
+  if(model){
+    const bob = Math.sin(t*cur.bobSpd*Math.PI) * cur.bob * motion;
+    model.position.y = bob;
+    const br = 1 + Math.sin(t*1.4)*cur.breath*motion;
+    model.scale.set(1, br, 1);
+    dragY += (dragTargetY - dragY) * (1-Math.exp(-6*dt));
+    if(!dragging) dragTargetY *= Math.exp(-.5*dt);
+    model.rotation.y = dragY;
+
+    if(headGroup){ headGroup.rotation.z = cur.tilt; headGroup.rotation.x = cur.pitch + Math.sin(t*.7)*.012*motion; }
+    pupils.forEach(p=>{ p.position.y = p.userData.base.y + cur.pupilY; });
+
+    let eyeScale = cur.eyes;
+    if(stateName!=='sleeping'){
+      nextBlink -= dt;
+      if(nextBlink<=0 && blinkT<0){ blinkT=0; }
+      if(blinkT>=0){
+        blinkT += dt;
+        const ph = blinkT/.18;
+        if(ph>=1){ blinkT=-1; nextBlink = 2.2 + Math.random()*2.8; }
+        else eyeScale *= (1 - Math.sin(ph*Math.PI)*.92);
+      }
+    }
+    eyes.forEach(e=>{ e.scale.y = Math.max(.05, eyeScale); });
+
+    mouthLevel = Math.max(cur.mouth, mouthLevel - dt*3.2);
+    let mOpen = mouthLevel;
+    if(stateName==='speaking') mOpen = Math.max(mOpen, cur.mouth + Math.abs(Math.sin(t*9))*.3);
+    if(smileGroup){ smileGroup.scale.set(1 + cur.squint*.25, 1 + mOpen*1.1, 1); }
+
+    const waveOsc = Math.sin(t*7)*.5*motion;
+    if(armR){ armR.rotation.z = cur.wave*2.2 + cur.armsUp*2.4; }
+    if(elbowR){ elbowR.rotation.z = cur.wave*(.3 + waveOsc) - cur.armsUp*.3; }
+    if(armL){ armL.rotation.z = -cur.armsUp*2.4; }
+    if(elbowL){ elbowL.rotation.z = cur.armsUp*.3; }
+
+    cheeks.forEach(c=>{ const s = 1 + cur.squint*.18; c.scale.set(s,s,s); });
+
+    if(glowMat){
+      const pulse = reduced ? 0 : Math.sin(t*cur.glowSpd*Math.PI)*cur.glowAmp;
+      const lvl = stateName==='listening' ? micLevel*.9 : 0;
+      glowMat.emissiveIntensity = Math.max(0, cur.glow + pulse + lvl);
+    }
+    const sh = scene.getObjectByName('blobShadow');
+    if(sh){ const s = 1 - bob*.35; sh.scale.set(s,s,1); sh.material.opacity = .9 - bob*.8; }
+  }
+  renderer.render(scene, camera);
+}
+
+function onResize(){
+  if(!renderer) return;
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  fitCamera();
+}
+
+try{ init(); }catch(e){ fail(e && e.message ? e.message : e); }
+</script>
+</body>
+</html>

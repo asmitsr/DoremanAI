@@ -43,6 +43,31 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, Phase.Idle)
 
+    // v2.3.0: 3D mascot state, derived from the real assistant phase.
+    // Transient moments (greeting wave, happy bounce) override briefly;
+    // after 3 idle minutes the mascot sleeps until the next activity.
+    private val mascotOverride = MutableStateFlow<MascotState?>(null)
+    private var mascotOverrideJob: Job? = null
+    private val mascotSleeping = MutableStateFlow(false)
+    @Volatile private var lastMascotActive = System.currentTimeMillis()
+    val mouthPulse = MutableStateFlow(0L)
+    val mascotState: StateFlow<MascotState> = combine(uiPhase, mascotOverride, mascotSleeping) { ph, ov, sl ->
+        ov ?: when {
+            ph == Phase.Listening -> MascotState.LISTENING
+            ph == Phase.Thinking || ph == Phase.Executing -> MascotState.THINKING
+            ph == Phase.Speaking -> MascotState.SPEAKING
+            sl -> MascotState.SLEEPING
+            else -> MascotState.IDLE
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, MascotState.IDLE)
+
+    private fun mascotMoment(state: MascotState, ms: Long) {
+        mascotOverrideJob?.cancel()
+        mascotOverride.value = state
+        lastMascotActive = System.currentTimeMillis()
+        mascotOverrideJob = viewModelScope.launch { delay(ms); mascotOverride.value = null }
+    }
+
     val partial = MutableStateFlow("")
     val level = MutableStateFlow(0f)
     val banner = MutableStateFlow<String?>(null)
@@ -77,6 +102,26 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     // the system killed it in another app). Without this, returning to
     // Doreman after a kill left no floating button and no service.
     init {
+        // v2.3.0: TTS word-range callbacks pulse the mascot's mouth.
+        a.tts.onRange = { mouthPulse.value++ }
+        viewModelScope.launch {
+            uiPhase.collect { ph ->
+                if (ph != Phase.Idle) {
+                    lastMascotActive = System.currentTimeMillis()
+                    mascotSleeping.value = false
+                }
+            }
+        }
+        viewModelScope.launch {
+            while (true) {
+                delay(20_000)
+                if (uiPhase.value == Phase.Idle &&
+                    System.currentTimeMillis() - lastMascotActive > 180_000
+                ) {
+                    mascotSleeping.value = true
+                }
+            }
+        }
         viewModelScope.launch {
             try {
                 if (a.prefs.current().stayAwake) {
@@ -136,6 +181,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (cleanedCmd.isBlank()) {
             awakeForNextCommand = true
             val greet = "Yes, I am listening!"
+            mascotMoment(MascotState.GREETING, 2600)
             lastSpokenReply.value = greet
             speak(greet) {
                 if (handsFree.value && inForeground) scheduleNextListen(350)
@@ -216,6 +262,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 phase.value = Phase.Idle
                 retryStatus.value = null
+                if (!answer.startsWith("I could not") && answer != "Stopped.") {
+                    mascotMoment(MascotState.HAPPY, 2200)
+                }
                 handle(Plan(answer, emptyList(), emptyList()), s.model, false)
                 return@launch
             }
@@ -291,7 +340,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private fun runActions(list: List<Action>) {
         if (a.executor.busy) a.executor.cancel()
         summaryClearJob?.cancel()
-        a.executor.run(list) { log, _ ->
+        a.executor.run(list) { log, ok ->
+            if (ok) mascotMoment(MascotState.HAPPY, 2200)
             val summary = log.lastOrNull() ?: ""
             if (summary.isNotBlank()) {
                 lastSpokenReply.value = summary

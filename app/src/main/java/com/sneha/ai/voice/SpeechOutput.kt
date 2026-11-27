@@ -13,6 +13,8 @@ class SpeechOutput(ctx: Context) {
     val speaking = MutableStateFlow(false)
     val error = MutableStateFlow<String?>(null)
     private var onUtteranceDone: (() -> Unit)? = null
+    // v2.3.0: fired on each spoken word range (mascot mouth pulses).
+    var onRange: (() -> Unit)? = null
 
     init {
         tts = TextToSpeech(ctx.applicationContext) { st ->
@@ -20,6 +22,9 @@ class SpeechOutput(ctx: Context) {
             if (ready) {
                 tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(id: String?) { speaking.value = true }
+                    override fun onRangeStart(id: String?, start: Int, end: Int, frame: Int) {
+                        onRange?.invoke()
+                    }
                     override fun onDone(id: String?) {
                         speaking.value = false
                         val cb = onUtteranceDone
