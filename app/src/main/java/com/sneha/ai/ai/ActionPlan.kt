@@ -33,11 +33,30 @@ sealed class Action {
     data class Wifi(val mode: String, val ssid: String? = null) : Action()
     data class Bluetooth(val mode: String, val device: String? = null) : Action()
     data class StayAwake(val on: Boolean) : Action()
+    // v2.2.3 — in-app camera, device info, system panels, gestures.
+    data class TakePhoto(val front: Boolean) : Action()
+    object ShowLastPhoto : Action()
+    object Screenshot : Action()
+    object BatteryStatus : Action()
+    object DeviceInfo : Action()
+    object OpenNotifications : Action()
+    object OpenQuickSettings : Action()
+    object RecentApps : Action()
+    data class Swipe(val dir: String) : Action()
+    data class SetAlarm(val hour: Int, val minute: Int, val label: String = "") : Action()
+    data class SetTimer(val seconds: Int, val label: String = "") : Action()
+    data class OpenUrl(val url: String) : Action()
+    data class SetBrightness(val level: Int) : Action()
+    data class Vibrate(val ms: Long) : Action()
+    data class CopyText(val text: String) : Action()
+    object ReadClipboard : Action()
 }
 
 fun Action.isUi(): Boolean = when (this) {
     is Action.TapText, is Action.TapXY, is Action.TapIndex, is Action.TapAnyText, is Action.Scroll, is Action.TypeText -> true
     Action.Back, Action.Home, Action.Enter, Action.ReadScreen, Action.LockScreen, Action.PowerMenu -> true
+    Action.Screenshot, Action.OpenNotifications, Action.OpenQuickSettings, Action.RecentApps -> true
+    is Action.Swipe -> true
     is Action.YouTubeSearch -> playFirst
     is Action.PlayStoreInstall -> true
     is Action.WhatsAppMsg -> true
@@ -81,6 +100,22 @@ fun Action.describe(): String = when (this) {
         else -> "Bluetooth $mode"
     }
     is Action.StayAwake -> if (on) "Stay awake (foreground service + floating button)" else "Stay awake turned off"
+    is Action.TakePhoto -> if (front) "Taking a selfie (front camera)" else "Taking a photo (back camera)"
+    Action.ShowLastPhoto -> "Showing your last photo"
+    Action.Screenshot -> "Taking a screenshot"
+    Action.BatteryStatus -> "Checking battery"
+    Action.DeviceInfo -> "Checking device info"
+    Action.OpenNotifications -> "Opening notifications"
+    Action.OpenQuickSettings -> "Opening quick settings"
+    Action.RecentApps -> "Opening recent apps"
+    is Action.Swipe -> "Swipe $dir"
+    is Action.SetAlarm -> "Setting alarm %02d:%02d".format(hour, minute) + if (label.isNotBlank()) " ($label)" else ""
+    is Action.SetTimer -> "Setting timer ${seconds}s" + if (label.isNotBlank()) " ($label)" else ""
+    is Action.OpenUrl -> "Opening $url"
+    is Action.SetBrightness -> "Setting brightness to $level%"
+    is Action.Vibrate -> "Vibrating phone"
+    is Action.CopyText -> "Copying text"
+    Action.ReadClipboard -> "Reading clipboard"
 }
 
 data class Plan(val reply: String, val actions: List<Action>, val rejected: List<String>) {
@@ -186,6 +221,34 @@ object PlanParser {
                     if (mode in setOf("on", "off", "connect", "list")) Action.Bluetooth(mode, a.optString("device").trim().takeIf { it.isNotBlank() }) else null
                 }
                 "stay_awake" -> Action.StayAwake(a.optBoolean("on", true))
+                // v2.2.3
+                "take_photo" -> Action.TakePhoto(
+                    a.optBoolean("front", false) ||
+                        a.optString("camera").trim().lowercase() in setOf("front", "selfie")
+                )
+                "show_last_photo" -> Action.ShowLastPhoto
+                "screenshot" -> Action.Screenshot
+                "battery_status" -> Action.BatteryStatus
+                "device_info" -> Action.DeviceInfo
+                "open_notifications" -> Action.OpenNotifications
+                "open_quick_settings" -> Action.OpenQuickSettings
+                "recent_apps" -> Action.RecentApps
+                "ui_swipe" -> a.optString("direction").trim().lowercase()
+                    .takeIf { it in setOf("up", "down", "left", "right") }?.let { Action.Swipe(it) }
+                "set_alarm" -> {
+                    val h = a.optInt("hour", -1)
+                    val m = a.optInt("minute", 0)
+                    if (h in 0..23 && m in 0..59) Action.SetAlarm(h, m, a.optString("label").trim().take(60)) else null
+                }
+                "set_timer" -> {
+                    val s = if (a.has("seconds")) a.optInt("seconds", 0) else a.optInt("minutes", 0) * 60
+                    if (s in 1..86400) Action.SetTimer(s, a.optString("label").trim().take(60)) else null
+                }
+                "open_url" -> a.optString("url").trim().takeIf { it.isNotBlank() }?.let { Action.OpenUrl(it.take(500)) }
+                "set_brightness" -> a.optInt("level", -1).takeIf { it in 0..100 }?.let { Action.SetBrightness(it) }
+                "vibrate" -> Action.Vibrate(a.optLong("ms", 500).coerceIn(50, 5000))
+                "copy_text" -> a.optString("text").takeIf { it.isNotEmpty() }?.let { Action.CopyText(it.take(1000)) }
+                "read_clipboard" -> Action.ReadClipboard
                 else -> null
             }
             if (act == null) rej.add(t.ifBlank { "?" }) else ok.add(act)

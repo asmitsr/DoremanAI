@@ -35,6 +35,7 @@ data class Settings(
     val notifyAutomation: Boolean = true,
     val stayAwake: Boolean = false,
     val agentMode: Boolean = false, // v2.2.0: ARTEMIS-style agent loop
+    val lastPhoto: String = "", // v2.2.3: MediaStore URI of the last in-app photo
     val reqCount: Int = 0,
     val tokensIn: Long = 0,
     val tokensOut: Long = 0,
@@ -66,6 +67,7 @@ object K {
     val notify = booleanPreferencesKey("notify_automation")
     val stayAwake = booleanPreferencesKey("stay_awake")
     val agentMode = booleanPreferencesKey("agent_mode")
+    val lastPhoto = stringPreferencesKey("last_photo")
     val req = intPreferencesKey("req_count")
     val tin = longPreferencesKey("tokens_in")
     val tout = longPreferencesKey("tokens_out")
@@ -100,6 +102,7 @@ class Prefs(private val ctx: Context) {
             notifyAutomation = p[K.notify] ?: d.notifyAutomation,
             stayAwake = p[K.stayAwake] ?: d.stayAwake,
             agentMode = p[K.agentMode] ?: d.agentMode,
+            lastPhoto = p[K.lastPhoto] ?: d.lastPhoto,
             reqCount = p[K.req] ?: 0,
             tokensIn = p[K.tin] ?: 0L,
             tokensOut = p[K.tout] ?: 0L,

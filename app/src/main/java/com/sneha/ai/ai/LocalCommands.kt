@@ -92,31 +92,28 @@ object LocalCommands {
             return Plan(ok, listOf(Action.CallContact(callTarget)), emptyList())
         }
 
-        // --- Camera / gallery recipes (v2.2.2) -------------------------------
-        // Deterministic sequences for icon-only screens the LLM agent
-        // cannot read reliably. TapAnyText tries common button labels.
-        val switchLabels = listOf("Switch camera", "Switch", "Front camera", "Front", "Selfie", "Rotate", "Flip")
-        val shutterLabels = listOf("Capture", "Take photo", "Take picture", "Shutter")
+        // --- Camera (v2.2.3: in-app CameraX capture, no UI guessing) --------
         if (lower.contains("সেলফি") || lower.contains("selfie") || lower.contains("ফ্রন্ট ক্যামেরা")) {
-            return Plan(ok, listOf(
-                Action.OpenApp("Camera"), Action.Wait(1800L),
-                Action.TapAnyText(switchLabels), Action.Wait(800L),
-                Action.TapAnyText(shutterLabels)
-            ), emptyList())
+            return Plan(ok, listOf(Action.TakePhoto(true)), emptyList())
         }
         if (lower.contains("ছবি তোলো") || lower.contains("ছবি তুলো") || lower.contains("ছবি তুল") ||
             lower.contains("take a photo") || lower.contains("take photo")) {
-            return Plan(ok, listOf(
-                Action.OpenApp("Camera"), Action.Wait(1800L),
-                Action.TapAnyText(shutterLabels)
-            ), emptyList())
+            return Plan(ok, listOf(Action.TakePhoto(false)), emptyList())
         }
         if ((lower.contains("ছবি") && lower.contains("দেখাও")) || lower.contains("শেষ ছবি") ||
             (lower.contains("show") && lower.contains("photo"))) {
-            return Plan(ok, listOf(
-                Action.OpenApp("Gallery"), Action.Wait(1500L),
-                Action.TapAnyText(listOf("Photo", "Image", "ছবি"))
-            ), emptyList())
+            return Plan(ok, listOf(Action.ShowLastPhoto), emptyList())
+        }
+        // --- Battery / screenshot / notifications (v2.2.3) -------------------
+        if (lower.contains("কত পারসেন্ট চার্জ") || lower.contains("ব্যাটারি") || lower.contains("battery")) {
+            return Plan(ok, listOf(Action.BatteryStatus), emptyList())
+        }
+        if (lower.contains("স্ক্রিনশট") || lower.contains("screenshot")) {
+            return Plan(ok, listOf(Action.Screenshot), emptyList())
+        }
+        if (lower.contains("নোটিফিকেশন দেখাও") || lower.contains("নোটিফিকেশন খোলো") ||
+            lower.contains("show notifications") || lower.contains("open notifications")) {
+            return Plan(ok, listOf(Action.OpenNotifications), emptyList())
         }
 
         // --- Open an app ----------------------------------------------------
@@ -166,7 +163,8 @@ object LocalCommands {
                 return Plan(ok, listOf(Action.Media("next")), emptyList())
             lower.contains("আগের গান") || lower.contains("previous song") ->
                 return Plan(ok, listOf(Action.Media("previous")), emptyList())
-            lower == "গান চালাও" || lower == "play music" ->
+            lower == "গান চালাও" || lower == "গান শোনাও" || lower == "গান বাজাও" ||
+                lower == "play music" || lower == "play song" || lower.contains("music চালাও") ->
                 return Plan(ok, listOf(Action.Media("play")), emptyList())
         }
 

@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings as AndroidSettings
 import android.view.KeyEvent
@@ -90,6 +91,17 @@ class ActionExecutor(private val app: SnehaApp) {
                 return R(r.first, r.second)
             }
             is Action.StayAwake -> return stayAwake(a.on)
+            // v2.2.3: instant device actions (no Accessibility needed).
+            is Action.TakePhoto -> { val r = DeviceControl.takePhoto(app, a.front); return R(r.first, r.second) }
+            Action.BatteryStatus -> { val r = DeviceControl.battery(app); return R(r.first, r.second) }
+            Action.DeviceInfo -> { val r = DeviceControl.deviceInfo(app); return R(r.first, r.second) }
+            is Action.Vibrate -> { val r = DeviceControl.vibrate(app, a.ms); return R(r.first, r.second) }
+            is Action.SetBrightness -> { val r = DeviceControl.setBrightness(app, a.level); return R(r.first, r.second) }
+            is Action.SetAlarm -> { val r = DeviceControl.setAlarm(app, a); return R(r.first, r.second) }
+            is Action.SetTimer -> { val r = DeviceControl.setTimer(app, a); return R(r.first, r.second) }
+            is Action.OpenUrl -> { val r = DeviceControl.openUrl(app, a.url); return R(r.first, r.second) }
+            is Action.CopyText -> { val r = DeviceControl.copyText(app, a.text); return R(r.first, r.second) }
+            Action.ReadClipboard -> { val r = DeviceControl.readClipboard(app); return R(r.first, r.second) }
             else -> {}
         }
         if (a.isUi()) {
@@ -143,6 +155,18 @@ class ActionExecutor(private val app: SnehaApp) {
                     if (e == null) R(true, "Saved to memory") else R(false, e)
                 }
             }
+            Action.ShowLastPhoto -> {
+                val uri = app.prefs.current().lastPhoto
+                if (uri.isBlank()) openApp("Gallery")
+                else try {
+                    val i = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(uri), "image/*")
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    app.startActivity(i)
+                    R(true, "Showing your last photo")
+                } catch (_: Exception) {
+                    openApp("Gallery")
+                }
+            }
             else -> R(false, "Unsupported action")
         }
     }
@@ -152,6 +176,14 @@ class ActionExecutor(private val app: SnehaApp) {
         is Action.TapXY -> changed(s) { s.tapXY(a.x, a.y) }
         is Action.TapIndex -> changed(s) { s.tapByIndex(a.index) }
         is Action.TapAnyText -> changed(s) { a.texts.any { t -> s.tapByText(t) } }
+        is Action.Swipe -> changed(s) { s.swipe(a.dir) }
+        Action.Screenshot -> {
+            val uri = s.captureScreenshot()
+            R(uri != null, if (uri != null) "Screenshot saved to gallery" else "Screenshot failed")
+        }
+        Action.OpenNotifications -> { val ok = s.openNotifications(); R(ok, if (ok) "Notifications opened" else "Could not open notifications") }
+        Action.OpenQuickSettings -> { val ok = s.openQuickSettings(); R(ok, if (ok) "Quick settings opened" else "Could not open quick settings") }
+        Action.RecentApps -> { val ok = s.recentApps(); R(ok, if (ok) "Recent apps opened" else "Could not open recent apps") }
         is Action.Scroll -> changed(s) { s.scroll(a.down) }
         Action.Back -> { val ok = s.back(); R(ok, if (ok) "Back sent" else "Back failed") }
         Action.Home -> { val ok = s.home(); R(ok, if (ok) "Home sent" else "Home failed") }

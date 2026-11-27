@@ -2,16 +2,23 @@ package com.sneha.ai.automation
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.content.ContentValues
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
+import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.sneha.ai.comms.Translit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.coroutines.resume
 
 /**
@@ -86,6 +93,65 @@ class SnehaAccessibilityService : AccessibilityService() {
     fun home(): Boolean = performGlobalAction(GLOBAL_ACTION_HOME)
     fun lockScreen(): Boolean = if (Build.VERSION.SDK_INT >= 28) performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN) else false
     fun openPowerDialog(): Boolean = performGlobalAction(GLOBAL_ACTION_POWER_DIALOG)
+    fun openNotifications(): Boolean = performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
+    fun openQuickSettings(): Boolean = performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS)
+    fun recentApps(): Boolean = performGlobalAction(GLOBAL_ACTION_RECENTS)
+
+    // v2.2.3: directional swipe (sliders, dismiss, gallery paging).
+    suspend fun swipe(dir: String): Boolean {
+        val dm = resources.displayMetrics
+        val w = dm.widthPixels.toFloat()
+        val h = dm.heightPixels.toFloat()
+        val cx = w / 2f
+        val cy = h / 2f
+        val p = Path()
+        when (dir) {
+            "up" -> { p.moveTo(cx, h * 0.75f); p.lineTo(cx, h * 0.25f) }
+            "down" -> { p.moveTo(cx, h * 0.25f); p.lineTo(cx, h * 0.75f) }
+            "left" -> { p.moveTo(w * 0.8f, cy); p.lineTo(w * 0.2f, cy) }
+            "right" -> { p.moveTo(w * 0.2f, cy); p.lineTo(w * 0.8f, cy) }
+            else -> return false
+        }
+        return gesture(p, 250)
+    }
+
+    // v2.2.3: screenshot via the Accessibility API (Android 11+), saved
+    // to Pictures/Doreman. Returns the saved URI string, or null.
+    suspend fun captureScreenshot(): String? {
+        if (Build.VERSION.SDK_INT < 30) return null
+        val result = suspendCancellableCoroutine<ScreenshotResult?> { cont ->
+            try {
+                takeScreenshot(Display.DEFAULT_DISPLAY, mainExecutor, object : TakeScreenshotCallback {
+                    override fun onSuccess(r: ScreenshotResult) { if (cont.isActive) cont.resume(r) }
+                    override fun onFailure(errorCode: Int) { if (cont.isActive) cont.resume(null) }
+                })
+            } catch (_: Exception) {
+                if (cont.isActive) cont.resume(null)
+            }
+        } ?: return null
+        val bitmap = try {
+            Bitmap.wrapHardwareBuffer(result.hardwareBuffer, result.colorSpace)?.copy(Bitmap.Config.ARGB_8888, false)
+        } catch (_: Exception) {
+            null
+        } finally {
+            try { result.hardwareBuffer.close() } catch (_: Exception) {}
+        } ?: return null
+        return try {
+            val name = "Doreman_shot_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".png"
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, name)
+                put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                if (Build.VERSION.SDK_INT >= 29) put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Doreman")
+            }
+            val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
+            contentResolver.openOutputStream(uri)?.use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
+            uri.toString()
+        } catch (_: Exception) {
+            null
+        } finally {
+            bitmap.recycle()
+        }
+    }
 
     private fun walk(n: AccessibilityNodeInfo?, depth: Int = 0, visit: (AccessibilityNodeInfo) -> Boolean): Boolean {
         if (n == null || depth > 40) return false

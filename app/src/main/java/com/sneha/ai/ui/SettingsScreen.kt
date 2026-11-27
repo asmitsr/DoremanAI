@@ -566,6 +566,7 @@ fun PrivacyPage(vm: MainViewModel) {
     val phone = remember(tick) { granted(ctx, Manifest.permission.CALL_PHONE) }
     val sms = remember(tick) { granted(ctx, Manifest.permission.SEND_SMS) }
     val notif = remember(tick) { Build.VERSION.SDK_INT < 33 || granted(ctx, Manifest.permission.POST_NOTIFICATIONS) }
+    val camera = remember(tick) { granted(ctx, Manifest.permission.CAMERA) }
 
     val multiLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         permTick++
@@ -581,7 +582,8 @@ fun PrivacyPage(vm: MainViewModel) {
                         Manifest.permission.RECORD_AUDIO,
                         Manifest.permission.READ_CONTACTS,
                         Manifest.permission.CALL_PHONE,
-                        Manifest.permission.SEND_SMS
+                        Manifest.permission.SEND_SMS,
+                        Manifest.permission.CAMERA
                     )
                     if (Build.VERSION.SDK_INT >= 33) list.add(Manifest.permission.POST_NOTIFICATIONS)
                     multiLauncher.launch(list.toTypedArray())
@@ -598,6 +600,7 @@ fun PrivacyPage(vm: MainViewModel) {
             Text("📞 Direct phone call: ${yn(phone)}")
             Text("💬 Direct SMS: ${yn(sms)}")
             Text("🔔 Notifications: ${yn(notif)}")
+            Text("📷 Camera (selfie/photo): ${yn(camera)}")
             Text("👆 Accessibility (game installs and WhatsApp sending): ${yn(a11y)}")
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
