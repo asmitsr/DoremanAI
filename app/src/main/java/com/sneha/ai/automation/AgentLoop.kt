@@ -11,6 +11,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 
 /**
@@ -84,7 +85,9 @@ Rules: Prefer ui_tap_text with the exact visible text. For an icon button with e
                     append("Reply with ONE action as JSON, or actions: [] if the goal is achieved.")
                 }
 
-                val res = provider.generate(AGENT_SYSTEM, listOf(ChatMsg("user", prompt)), cfg, true)
+                val res = withTimeoutOrNull(45_000) {
+                    provider.generate(AGENT_SYSTEM, listOf(ChatMsg("user", prompt)), cfg, true)
+                } ?: return "The AI took too long to reply, so I stopped. Please try again."
                 val reply = res.getOrElse { e ->
                     if (e is CancellationException) throw e
                     return (e as? AiException)?.userMessage() ?: "Agent error: ${e.message}"
@@ -111,22 +114,31 @@ Rules: Prefer ui_tap_text with the exact visible text. For an icon button with e
                 val action = plan.actions.first()
                 onStatus("Step $step: ${action.describe()}")
 
-                // ActionExecutor.run() silently returns while busy, which
-                // would hang the await below — wait for it to free up first.
-                while (exec.busy) {
+                // ActionExecutor.run() refuses while busy — wait for it to
+                // free up first, but never forever (v2.3.1 hang-proofing).
+                var waited = 0
+                while (exec.busy && waited < 600) {
                     if (!currentCoroutineContext().isActive) {
                         exec.cancel()
                         return "Stopped."
                     }
                     delay(100)
+                    waited++
                 }
-                val result = suspendCancellableCoroutine { cont ->
-                    cont.invokeOnCancellation { exec.cancel() }
-                    exec.run(listOf(action)) { log, ok ->
-                        if (cont.isActive) {
-                            cont.resume(log.joinToString("\n").ifBlank { if (ok) "OK" else "Failed" })
+                if (exec.busy) exec.cancel()
+                val result: String = withTimeoutOrNull(45_000) {
+                    suspendCancellableCoroutine<String> { cont ->
+                        cont.invokeOnCancellation { exec.cancel() }
+                        val started = exec.run(listOf(action)) { log, ok ->
+                            if (cont.isActive) {
+                                cont.resume(log.joinToString("\n").ifBlank { if (ok) "OK" else "Failed" })
+                            }
                         }
+                        if (!started && cont.isActive) cont.resume("Failed")
                     }
+                } ?: run {
+                    exec.cancel()
+                    return "That step took too long, so I stopped it. Please try again."
                 }
                 history.add("Step $step: $result")
                 // The notification Stop button cancels the executor, not

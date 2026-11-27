@@ -16,6 +16,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.sneha.ai.comms.Translit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -119,14 +120,16 @@ class SnehaAccessibilityService : AccessibilityService() {
     // to Pictures/Doreman. Returns the saved URI string, or null.
     suspend fun captureScreenshot(): String? {
         if (Build.VERSION.SDK_INT < 30) return null
-        val result = suspendCancellableCoroutine<ScreenshotResult?> { cont ->
-            try {
-                takeScreenshot(Display.DEFAULT_DISPLAY, mainExecutor, object : TakeScreenshotCallback {
-                    override fun onSuccess(r: ScreenshotResult) { if (cont.isActive) cont.resume(r) }
-                    override fun onFailure(errorCode: Int) { if (cont.isActive) cont.resume(null) }
-                })
-            } catch (_: Exception) {
-                if (cont.isActive) cont.resume(null)
+        val result = withTimeoutOrNull(5000) {
+            suspendCancellableCoroutine<ScreenshotResult?> { cont ->
+                try {
+                    takeScreenshot(Display.DEFAULT_DISPLAY, mainExecutor, object : TakeScreenshotCallback {
+                        override fun onSuccess(r: ScreenshotResult) { if (cont.isActive) cont.resume(r) }
+                        override fun onFailure(errorCode: Int) { if (cont.isActive) cont.resume(null) }
+                    })
+                } catch (_: Exception) {
+                    if (cont.isActive) cont.resume(null)
+                }
             }
         } ?: return null
         val bitmap = try {
@@ -276,14 +279,18 @@ class SnehaAccessibilityService : AccessibilityService() {
         return gesture(p, 60)
     }
 
-    private suspend fun gesture(p: Path, durationMs: Long): Boolean = suspendCancellableCoroutine { c ->
-        val g = GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(p, 0, durationMs)).build()
-        val dispatched = dispatchGesture(g, object : AccessibilityService.GestureResultCallback() {
-            override fun onCompleted(d: GestureDescription?) { if (c.isActive) c.resume(true) }
-            override fun onCancelled(d: GestureDescription?) { if (c.isActive) c.resume(false) }
-        }, null)
-        if (!dispatched && c.isActive) c.resume(false)
-    }
+    private suspend fun gesture(p: Path, durationMs: Long): Boolean =
+        // v2.3.1: some devices never call back — never hang the agent on it.
+        withTimeoutOrNull(3000) {
+            suspendCancellableCoroutine { c ->
+                val g = GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(p, 0, durationMs)).build()
+                val dispatched = dispatchGesture(g, object : AccessibilityService.GestureResultCallback() {
+                    override fun onCompleted(d: GestureDescription?) { if (c.isActive) c.resume(true) }
+                    override fun onCancelled(d: GestureDescription?) { if (c.isActive) c.resume(false) }
+                }, null)
+                if (!dispatched && c.isActive) c.resume(false)
+            }
+        } ?: false
 
     suspend fun scroll(down: Boolean): Boolean {
         val root = rootInActiveWindow ?: return false

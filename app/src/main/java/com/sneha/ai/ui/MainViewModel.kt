@@ -89,6 +89,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     // hands-free listener / foreground re-listen from cancelling the
     // agent with a new voice command (the "Stopped." bug).
     @Volatile private var agentRunning = false
+    @Volatile private var agentStartedAt = 0L // v2.3.1: watchdog for a stuck agent
     private var summaryClearJob: Job? = null
     private var inForeground = true
     private var awakeForNextCommand = false
@@ -162,7 +163,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private fun onVoiceResult(spoken: String) {
         // v2.2.1: while the agent works, ignore barge-in speech so a
         // stray recognition cannot cancel the running task.
-        if (agentRunning) return
+        // v2.3.1 watchdog: if the agent has been "running" for over two
+        // minutes it is stuck — reset it instead of ignoring the user
+        // forever (speech was transcribed but never acted on).
+        if (agentRunning) {
+            if (System.currentTimeMillis() - agentStartedAt > 120_000) {
+                thinkJob?.cancel()
+                agentRunning = false
+                phase.value = Phase.Idle
+            } else {
+                return
+            }
+        }
         val raw = spoken.trim()
         if (raw.isEmpty()) {
             if (handsFree.value && inForeground) scheduleNextListen(600)
@@ -253,10 +265,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val svc = SnehaAccessibilityService.instance
             if (s.agentMode && svc != null) {
                 agentRunning = true
+                agentStartedAt = System.currentTimeMillis()
                 val answer = try {
                     AgentLoop.run(cleanedCmd, currentProvider(), cfg, a.executor, svc) { status ->
                         retryStatus.value = status
                     }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // v2.3.1: never leave the phase stuck on Thinking.
+                    "Something went wrong while working on that: ${e.message ?: "unknown error"}"
                 } finally {
                     agentRunning = false
                 }

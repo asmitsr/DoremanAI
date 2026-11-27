@@ -48,8 +48,8 @@ class ActionExecutor(private val app: SnehaApp) {
     val busy: Boolean get() = job?.isActive == true
     private val audio: AudioManager get() = app.getSystemService(AudioManager::class.java)
 
-    fun run(actions: List<Action>, onDone: (List<String>, Boolean) -> Unit) {
-        if (busy) return
+    fun run(actions: List<Action>, onDone: (List<String>, Boolean) -> Unit): Boolean {
+        if (busy) return false
         job = app.appScope.launch {
             val log = mutableListOf<String>()
             var ok = true
@@ -71,6 +71,7 @@ class ActionExecutor(private val app: SnehaApp) {
             }
             onDone(log, ok)
         }
+        return true
     }
 
     fun cancel() { job?.cancel() }
